@@ -104,6 +104,12 @@ export default function Sidebar() {
                       RSS Settings
                     </Button>
                   </Link>
+                  <Link href="/openai-config">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Bot className="mr-2 h-4 w-4" />
+                      OpenAI Config
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

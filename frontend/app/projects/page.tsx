@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Plus, FolderOpen, Clock, CheckCircle, AlertTriangle, BarChart3 } from "lucide-react"
 import AuthWrapper from "@/components/auth-wrapper"
 import Header from "@/components/header"
@@ -13,17 +18,32 @@ import { NewsProvider } from "@/components/news-provider"
 import { useAuth } from "@/contexts/auth-context"
 import { projectApi, Project, ProjectSummary, TaskSummary } from "@/lib/projectApi"
 import { format, parseISO, differenceInDays, isAfter } from "date-fns"
+import { useToast } from "@/hooks/use-toast"
+import TimelineView from "@/components/timeline-view"
+import CalendarView from "@/components/calendar-view"
+import ProjectEditDialog from "@/components/project-edit-dialog"
 
 // Disable static optimization for this page
 export const dynamic = 'force-dynamic'
 
 export default function ProjectsPage() {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [projects, setProjects] = useState<Project[]>([])
   const [summary, setSummary] = useState<ProjectSummary | null>(null)
   const [recentTasks, setRecentTasks] = useState<TaskSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedView, setSelectedView] = useState<'overview' | 'gantt' | 'calendar'>('overview')
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [projectFormData, setProjectFormData] = useState({
+    name: "",
+    description: "",
+    status: "planning" as const,
+    start_date: "",
+    end_date: ""
+  })
 
   useEffect(() => {
     loadData()
@@ -42,8 +62,90 @@ export default function ProjectsPage() {
       setRecentTasks(tasksData)
     } catch (error) {
       console.error('Error loading project data:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load project data. Please check if the backend server is running.",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleProjectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    try {
+      const projectData = {
+        ...projectFormData,
+        start_date: projectFormData.start_date ? new Date(projectFormData.start_date).toISOString() : undefined,
+        end_date: projectFormData.end_date ? new Date(projectFormData.end_date).toISOString() : undefined,
+      }
+      
+      const newProject = await projectApi.createProject(projectData)
+      setProjects([...projects, newProject])
+      setIsProjectDialogOpen(false)
+      setProjectFormData({
+        name: "",
+        description: "",
+        status: "planning",
+        start_date: "",
+        end_date: ""
+      })
+      
+      // Reload summary data
+      loadData()
+      
+      toast({
+        title: "Success",
+        description: "Project created successfully!",
+      })
+    } catch (error) {
+      console.error('Error creating project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDialogClose = () => {
+    setIsProjectDialogOpen(false)
+    setProjectFormData({
+      name: "",
+      description: "",
+      status: "planning",
+      start_date: "",
+      end_date: ""
+    })
+  }
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleProjectUpdated = (updatedProject: Project) => {
+    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p))
+    setIsEditDialogOpen(false)
+    setEditingProject(null)
+    // Reload data to get updated summary
+    loadData()
+  }
+
+  const handleProjectDeleted = (projectId: number) => {
+    setProjects(projects.filter(p => p.id !== projectId))
+    setIsEditDialogOpen(false)
+    setEditingProject(null)
+    // Reload data to get updated summary
+    loadData()
+  }
+
+  const handleCreateTask = (projectId: number) => {
+    const project = projects.find(p => p.id === projectId)
+    if (project) {
+      handleEditProject(project)
     }
   }
 
@@ -121,10 +223,83 @@ export default function ProjectsPage() {
                 <Calendar className="w-4 h-4 mr-2" />
                 Calendar
               </Button>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
+              <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Create New Project</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleProjectSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="project-name">Project Name</Label>
+                      <Input
+                        id="project-name"
+                        value={projectFormData.name}
+                        onChange={(e) => setProjectFormData({ ...projectFormData, name: e.target.value })}
+                        placeholder="e.g., Website Redesign"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="project-description">Description</Label>
+                      <Textarea
+                        id="project-description"
+                        value={projectFormData.description}
+                        onChange={(e) => setProjectFormData({ ...projectFormData, description: e.target.value })}
+                        placeholder="Brief description of the project..."
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="project-status">Status</Label>
+                      <Select value={projectFormData.status} onValueChange={(value: any) => setProjectFormData({ ...projectFormData, status: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select project status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="planning">Planning</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="on_hold">On Hold</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="start-date">Start Date</Label>
+                        <Input
+                          id="start-date"
+                          type="date"
+                          value={projectFormData.start_date}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, start_date: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="end-date">End Date</Label>
+                        <Input
+                          id="end-date"
+                          type="date"
+                          value={projectFormData.end_date}
+                          onChange={(e) => setProjectFormData({ ...projectFormData, end_date: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={handleDialogClose}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">
+                        Create Project
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
@@ -205,7 +380,11 @@ export default function ProjectsPage() {
                       </div>
                     ) : (
                       projects.map((project) => (
-                        <div key={project.id} className="border rounded-lg p-4 space-y-3">
+                        <button
+                          key={project.id}
+                          onClick={() => handleEditProject(project)}
+                          className="border rounded-lg p-4 space-y-3 text-left hover:bg-muted/50 transition-colors w-full"
+                        >
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-lg">{project.name}</h3>
                             <Badge className={`${getStatusColor(project.status)} text-white`}>
@@ -245,7 +424,7 @@ export default function ProjectsPage() {
                             </div>
                             <Progress value={calculateProgress(project)} className="h-2" />
                           </div>
-                        </div>
+                        </button>
                       ))
                     )}
                   </CardContent>
@@ -292,41 +471,36 @@ export default function ProjectsPage() {
           )}
 
           {selectedView === 'gantt' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Gantt Chart Timeline</CardTitle>
-                <CardDescription>Project timeline view</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Gantt Chart implementation coming soon...</p>
-                  <p className="text-sm mt-2">This will show project timelines and task dependencies</p>
-                </div>
-              </CardContent>
-            </Card>
+            <TimelineView 
+              projects={projects}
+              onEditProject={handleEditProject}
+              onCreateTask={handleCreateTask}
+            />
           )}
 
           {selectedView === 'calendar' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Calendar View</CardTitle>
-                <CardDescription>Calendar-based project planning</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Calendar view implementation coming soon...</p>
-                  <p className="text-sm mt-2">This will show tasks and deadlines in a calendar format</p>
-                </div>
-              </CardContent>
-            </Card>
+            <CalendarView 
+              projects={projects}
+              onEditProject={handleEditProject}
+              onCreateTask={handleCreateTask}
+            />
           )}
               </div>
             </main>
           </div>
         </NewsProvider>
       </div>
+
+      <ProjectEditDialog
+        project={editingProject}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false)
+          setEditingProject(null)
+        }}
+        onProjectUpdated={handleProjectUpdated}
+        onProjectDeleted={handleProjectDeleted}
+      />
     </AuthWrapper>
   )
 }

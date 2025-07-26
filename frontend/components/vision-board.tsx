@@ -192,7 +192,11 @@ export default function VisionBoard() {
   const handleDeleteItem = async (id: number) => {
     try {
       await visionBoardAPI.deleteItem(id)
+      // Remove item from local state immediately for instant UI feedback
       setVisionItems(visionItems.filter((item) => item.id !== id))
+      
+      // Reload data from server to ensure consistency
+      await loadVisionItems()
       
       toast({
         title: "Success",
