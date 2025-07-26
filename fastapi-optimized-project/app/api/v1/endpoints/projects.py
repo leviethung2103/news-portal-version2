@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from app.db.session import get_db
-from app.db.crud_project import project_crud, task_crud
+from app.db import crud_project
 from app.schemas.project import (
     Project, ProjectCreate, ProjectUpdate, ProjectWithTasks,
     Task, TaskCreate, TaskUpdate, ProjectSummary, TaskSummary
@@ -17,43 +17,43 @@ def get_current_user_id() -> int:
 
 
 @router.get("/summary", response_model=ProjectSummary)
-def get_project_summary(
-    db: Session = Depends(get_db),
+async def get_project_summary(
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Get project summary statistics for the current user."""
-    return project_crud.get_project_summary(db, current_user_id)
+    return await crud_project.get_project_summary(db, current_user_id)
 
 
 @router.get("/", response_model=List[Project])
-def get_projects(
+async def get_projects(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Get all projects for the current user."""
-    return project_crud.get_projects(db, current_user_id, skip, limit)
+    return await crud_project.get_projects(db, current_user_id, skip, limit)
 
 
 @router.post("/", response_model=Project)
-def create_project(
+async def create_project(
     project: ProjectCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Create a new project."""
-    return project_crud.create_project(db, project, current_user_id)
+    return await crud_project.create_project(db, project, current_user_id)
 
 
 @router.get("/{project_id}", response_model=ProjectWithTasks)
-def get_project(
+async def get_project(
     project_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Get a specific project with its tasks."""
-    project = project_crud.get_project_with_tasks(db, project_id, current_user_id)
+    project = await crud_project.get_project_with_tasks(db, project_id, current_user_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -63,14 +63,14 @@ def get_project(
 
 
 @router.put("/{project_id}", response_model=Project)
-def update_project(
+async def update_project(
     project_id: int,
     project_update: ProjectUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Update a project."""
-    project = project_crud.update_project(db, project_id, current_user_id, project_update)
+    project = await crud_project.update_project(db, project_id, current_user_id, project_update)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -80,13 +80,13 @@ def update_project(
 
 
 @router.delete("/{project_id}")
-def delete_project(
+async def delete_project(
     project_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Delete a project."""
-    success = project_crud.delete_project(db, project_id, current_user_id)
+    success = await crud_project.delete_project(db, project_id, current_user_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -97,26 +97,26 @@ def delete_project(
 
 # Task endpoints
 @router.get("/{project_id}/tasks", response_model=List[Task])
-def get_project_tasks(
+async def get_project_tasks(
     project_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Get all tasks for a specific project."""
-    return task_crud.get_tasks_by_project(db, project_id, current_user_id)
+    return await crud_project.get_tasks_by_project(db, project_id, current_user_id)
 
 
 @router.post("/{project_id}/tasks", response_model=Task)
-def create_task(
+async def create_task(
     project_id: int,
     task: TaskCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Create a new task in a project."""
     # Ensure the task is assigned to the correct project
     task.project_id = project_id
-    created_task = task_crud.create_task(db, task, current_user_id)
+    created_task = await crud_project.create_task(db, task, current_user_id)
     if not created_task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -126,24 +126,24 @@ def create_task(
 
 
 @router.get("/tasks/recent", response_model=List[TaskSummary])
-def get_recent_tasks(
+async def get_recent_tasks(
     limit: int = 10,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Get recent tasks for the current user."""
-    return task_crud.get_recent_tasks(db, current_user_id, limit)
+    return await crud_project.get_recent_tasks(db, current_user_id, limit)
 
 
 @router.put("/tasks/{task_id}", response_model=Task)
-def update_task(
+async def update_task(
     task_id: int,
     task_update: TaskUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Update a task."""
-    task = task_crud.update_task(db, task_id, current_user_id, task_update)
+    task = await crud_project.update_task(db, task_id, current_user_id, task_update)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -153,13 +153,13 @@ def update_task(
 
 
 @router.delete("/tasks/{task_id}")
-def delete_task(
+async def delete_task(
     task_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
     """Delete a task."""
-    success = task_crud.delete_task(db, task_id, current_user_id)
+    success = await crud_project.delete_task(db, task_id, current_user_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
