@@ -1,3 +1,4 @@
+
 # News Portal Dashboard
 
 ## How to Run the Frontend
@@ -18,6 +19,32 @@
    pnpm build
    pnpm start
    ```
+
+---
+
+## Backend Setup (FastAPI)
+
+1. Navigate to the backend directory:
+   ```sh
+   cd fastapi-optimized-project
+   ```
+
+2. Install dependencies with Poetry:
+   ```sh
+   poetry install
+   ```
+
+3. Activate the virtual environment:
+   ```sh
+   poetry shell
+   ```
+
+4. Start the backend server:
+   ```sh
+   python run.py
+   ```
+
+The backend will be available at [http://localhost:8000](http://localhost:8000)
 
 ---
 
