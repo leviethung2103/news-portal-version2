@@ -1,63 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+// Disable static optimization for this page
+export const dynamic = 'force-dynamic'
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogOut, User, ArrowRight, Target, Globe } from "lucide-react"
 import Link from "next/link"
-
-interface UserData {
-  name: string
-  email: string
-  picture?: string
-  username?: string
-}
+import AuthWrapper from "@/components/auth-wrapper"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<UserData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem("user")
-    const token = localStorage.getItem("token")
-
-    if (!userData || !token) {
-      router.push("/login")
-      return
-    }
-
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-    } catch (error) {
-      console.error("Error parsing user data:", error)
-      router.push("/login")
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
-
-  const handleLogout = () => {
-    localStorage.removeItem("user")
-    localStorage.removeItem("token")
-    router.push("/login")
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
+  const { user, logout } = useAuth()
 
   const getInitials = (name: string) => {
     return name
@@ -68,6 +23,7 @@ export default function DashboardPage() {
   }
 
   return (
+    <AuthWrapper requireAuth={true}>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -85,7 +41,7 @@ export default function DashboardPage() {
                 Vision Board
               </Link>
             </Button>
-            <Button onClick={handleLogout} variant="outline">
+            <Button onClick={logout} variant="outline">
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
@@ -104,13 +60,13 @@ export default function DashboardPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16">
-                  <AvatarImage src={user.picture || "/placeholder.svg"} alt={user.name} />
-                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                  <AvatarImage src={user?.picture || "/placeholder.svg"} alt={user?.name || ""} />
+                  <AvatarFallback>{user?.name ? getInitials(user.name) : "U"}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold text-lg">{user.name}</h3>
-                  <p className="text-muted-foreground">{user.email}</p>
-                  {user.username && <p className="text-sm text-muted-foreground">@{user.username}</p>}
+                  <h3 className="font-semibold text-lg">{user?.name}</h3>
+                  <p className="text-muted-foreground">{user?.email}</p>
+                  {user?.username && <p className="text-sm text-muted-foreground">@{user.username}</p>}
                 </div>
               </div>
             </CardContent>
@@ -199,5 +155,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </AuthWrapper>
   )
 }

@@ -100,6 +100,9 @@ ENV/
 env.bak/
 venv.bak/
 
+frontend/test-results
+frontend/tests/reports
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

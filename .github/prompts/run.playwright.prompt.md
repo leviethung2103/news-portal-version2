@@ -1,0 +1,27 @@
+---
+mode: agent
+---
+Define the task to achieve, including specific requirements, constraints, and success criteria.
+- Step 1: Check if Playwright is installed and configured in the `frontend` folder.
+- Step 2: Run Playwright tests in headed mode and ensure results are output to `frontend/tests/reports`.
+- Step 3: Collect and review the test results.
+- Step 4: Generate markdown reports for each test case, matching the existing documentation style.
+- Step 5: Verify that all steps meet the requirements and that reports are correctly generated.
+- Run the playwright test using command `npx playwright test --headed`.
+- Create reports for each test case to verify the functionality of the pages.
+- Test results will be saved in folder frontend/tests/reports.
+- Ensure that the test cases are compatible with the existing project structure and naming conventions.
+- Report in the markdown format, similar to the existing test case documents.
+- Capture any errors or issues encountered during the test execution and include them in the report.
+- Create the summary report with following format:
+  - Include a section for each test case with the following structure:
+    - Title of the test case
+    - Descsription of the test case
+    - Expected result
+    - Actual reult
+    - Status (Pass/Fail)
+- Ensure that the report is clear, concise, and easy to understand for developers and stakeholders.
+- The report should be structured in a way that allows easy navigation and understanding of the test results.
+- The report should be saved in the `frontend/tests/reports` directory.
+- Ensure that the report is generated in a format that can be easily shared and reviewed by the team.
+- The report should be generated automatically after running the Playwright tests.

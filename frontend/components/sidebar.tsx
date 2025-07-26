@@ -2,9 +2,10 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Globe, X, Settings } from "lucide-react"
+import { Globe, X, Settings, Bot, FolderOpen } from "lucide-react"
 import { useNews } from "@/components/news-provider"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const categories = [
   { id: "all", name: "All News", icon: Globe },
@@ -12,6 +13,7 @@ const categories = [
 
 export default function Sidebar() {
   const { selectedCategory, setSelectedCategory, sidebarOpen, toggleSidebar } = useNews()
+  const router = useRouter()
 
   return (
     <>
@@ -47,6 +49,7 @@ export default function Sidebar() {
                         className="w-full justify-start"
                         onClick={() => {
                           setSelectedCategory(category.id)
+                          router.push("/news")
                           if (window.innerWidth < 1024) {
                             toggleSidebar()
                           }
@@ -61,14 +64,32 @@ export default function Sidebar() {
               </div>
 
               <div className="mb-4">
-                <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">VISION</h3>
+                <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">PRODUCTIVITY</h3>
                 <div className="space-y-1">
+                  <Link href="/projects">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      Projects
+                    </Button>
+                  </Link>
                   <Link href="/vision-board">
                     <Button variant="ghost" className="w-full justify-start">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-2 h-4 w-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Vision Board
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">AI ASSISTANT</h3>
+                <div className="space-y-1">
+                  <Link href="/chatbot">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Bot className="mr-2 h-4 w-4" />
+                      AI Chatbot
                     </Button>
                   </Link>
                 </div>

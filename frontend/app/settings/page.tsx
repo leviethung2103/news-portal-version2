@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Header from "@/components/header"
 import Sidebar from "@/components/sidebar"
+import AuthWrapper from "@/components/auth-wrapper"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -34,8 +34,6 @@ import {
 import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
-  const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [feeds, setFeeds] = useState<RssFeed[]>([])
   const [cronJobs, setCronJobs] = useState<CronJob[]>([])
   const [schedulerStatus, setSchedulerStatus] = useState<any>(null)
@@ -59,18 +57,8 @@ export default function SettingsPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem("user")
-    const token = localStorage.getItem("token")
-
-    if (!userData || !token) {
-      router.push("/login")
-      return
-    }
-
-    setIsAuthenticated(true)
     loadAllData()
-  }, [router])
+  }, [])
 
   const loadAllData = async () => {
     try {
@@ -308,19 +296,18 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <AuthWrapper requireAuth={true}>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </AuthWrapper>
     )
   }
 
-  if (!isAuthenticated) {
-    return null
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      <NewsProvider>
+    <AuthWrapper requireAuth={true}>
+      <div className="min-h-screen bg-background">
+        <NewsProvider>
         <Header />
         <div className="flex">
           <Sidebar />
@@ -752,5 +739,6 @@ export default function SettingsPage() {
         </div>
       </NewsProvider>
     </div>
+    </AuthWrapper>
   )
 }

@@ -18,6 +18,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.models.rss import Base
 from app.models.user import Base as UserBase
+from app.models.vision_board import VisionItem  # Import to register model
+from app.models.project import Project, Task  # Import to register models
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,17 +20,17 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, ImageIcon, Target, Calendar, Star, Edit, Trash2, Download, Share2, Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
+import { visionBoardAPI, type VisionItem as APIVisionItem, type VisionItemCreate } from "@/lib/visionBoardApi"
+import { useToast } from "@/hooks/use-toast"
 
-interface VisionItem {
-  id: string
+// Use API VisionItem type, but create a local interface for form data
+interface VisionItemFormData {
   title: string
   description: string
   category: string
   targetDate: string
   priority: "high" | "medium" | "low"
-  imageUrl?: string
-  isCompleted: boolean
-  createdAt: string
+  imageUrl: string
 }
 
 const categories = [
@@ -53,121 +53,178 @@ const priorityColors = {
 }
 
 export default function VisionBoard() {
-  const [visionItems, setVisionItems] = useState<VisionItem[]>([
-    {
-      id: "1",
-      title: "Launch My Own Business",
-      description: "Start a tech company focused on sustainable solutions",
-      category: "Career",
-      targetDate: "2025-12-31",
-      priority: "high",
-      imageUrl: "/placeholder.svg?height=200&width=300",
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      title: "Run a Marathon",
-      description: "Complete my first full marathon in under 4 hours",
-      category: "Health & Fitness",
-      targetDate: "2025-06-15",
-      priority: "medium",
-      imageUrl: "/placeholder.svg?height=200&width=300",
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      title: "Visit Japan",
-      description: "Experience Japanese culture and visit Tokyo, Kyoto, and Mount Fuji",
-      category: "Travel",
-      targetDate: "2025-09-30",
-      priority: "medium",
-      imageUrl: "/placeholder.svg?height=200&width=300",
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-    },
-  ])
-
+  const [visionItems, setVisionItems] = useState<APIVisionItem[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<VisionItem | null>(null)
+  const [editingItem, setEditingItem] = useState<APIVisionItem | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [showCompleted, setShowCompleted] = useState(true)
+  const [loading, setLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
-  const [newItem, setNewItem] = useState({
+  const [newItem, setNewItem] = useState<VisionItemFormData>({
     title: "",
     description: "",
     category: "",
     targetDate: "",
-    priority: "medium" as const,
+    priority: "medium",
     imageUrl: "",
   })
 
-  const handleAddItem = () => {
-    if (!newItem.title || !newItem.category) return
+  // Load vision items from API
+  useEffect(() => {
+    loadVisionItems()
+  }, [])
 
-    const item: VisionItem = {
-      id: Date.now().toString(),
-      ...newItem,
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
+  const loadVisionItems = async () => {
+    try {
+      setLoading(true)
+      const items = await visionBoardAPI.getItems()
+      setVisionItems(items)
+    } catch (error) {
+      console.error("Failed to load vision items:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load vision items. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
-
-    setVisionItems([...visionItems, item])
-    setNewItem({
-      title: "",
-      description: "",
-      category: "",
-      targetDate: "",
-      priority: "medium",
-      imageUrl: "",
-    })
-    setIsAddDialogOpen(false)
   }
 
-  const handleEditItem = (item: VisionItem) => {
+  const handleAddItem = async () => {
+    if (!newItem.title || !newItem.category) return
+
+    try {
+      const createData: VisionItemCreate = {
+        title: newItem.title,
+        description: newItem.description || undefined,
+        category: newItem.category,
+        target_date: newItem.targetDate || undefined,
+        priority: newItem.priority,
+        image_url: newItem.imageUrl || undefined,
+      }
+
+      const createdItem = await visionBoardAPI.createItem(createData)
+      setVisionItems([...visionItems, createdItem])
+      
+      setNewItem({
+        title: "",
+        description: "",
+        category: "",
+        targetDate: "",
+        priority: "medium",
+        imageUrl: "",
+      })
+      setIsAddDialogOpen(false)
+      
+      toast({
+        title: "Success",
+        description: "Vision item created successfully!",
+      })
+    } catch (error) {
+      console.error("Failed to create vision item:", error)
+      toast({
+        title: "Error", 
+        description: "Failed to create vision item. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditItem = (item: APIVisionItem) => {
     setEditingItem(item)
     setNewItem({
       title: item.title,
-      description: item.description,
+      description: item.description || "",
       category: item.category,
-      targetDate: item.targetDate,
+      targetDate: item.target_date ? item.target_date.split('T')[0] : "",
       priority: item.priority,
-      imageUrl: item.imageUrl || "",
+      imageUrl: item.image_url || "",
     })
   }
 
-  const handleUpdateItem = () => {
+  const handleUpdateItem = async () => {
     if (!editingItem || !newItem.title || !newItem.category) return
 
-    const updatedItems = visionItems.map((item) =>
-      item.id === editingItem.id
-        ? {
-            ...item,
-            ...newItem,
-          }
-        : item,
-    )
+    try {
+      const updateData = {
+        title: newItem.title,
+        description: newItem.description || undefined,
+        category: newItem.category,
+        target_date: newItem.targetDate || undefined,
+        priority: newItem.priority,
+        image_url: newItem.imageUrl || undefined,
+      }
 
-    setVisionItems(updatedItems)
-    setEditingItem(null)
-    setNewItem({
-      title: "",
-      description: "",
-      category: "",
-      targetDate: "",
-      priority: "medium",
-      imageUrl: "",
-    })
+      const updatedItem = await visionBoardAPI.updateItem(editingItem.id, updateData)
+      
+      const updatedItems = visionItems.map((item) =>
+        item.id === editingItem.id ? updatedItem : item
+      )
+
+      setVisionItems(updatedItems)
+      setEditingItem(null)
+      setNewItem({
+        title: "",
+        description: "",
+        category: "",
+        targetDate: "",
+        priority: "medium",
+        imageUrl: "",
+      })
+      
+      toast({
+        title: "Success",
+        description: "Vision item updated successfully!",
+      })
+    } catch (error) {
+      console.error("Failed to update vision item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update vision item. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDeleteItem = (id: string) => {
-    setVisionItems(visionItems.filter((item) => item.id !== id))
+  const handleDeleteItem = async (id: number) => {
+    try {
+      await visionBoardAPI.deleteItem(id)
+      setVisionItems(visionItems.filter((item) => item.id !== id))
+      
+      toast({
+        title: "Success",
+        description: "Vision item deleted successfully!",
+      })
+    } catch (error) {
+      console.error("Failed to delete vision item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete vision item. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleToggleComplete = (id: string) => {
-    setVisionItems(visionItems.map((item) => (item.id === id ? { ...item, isCompleted: !item.isCompleted } : item)))
+  const handleToggleComplete = async (id: number) => {
+    try {
+      const updatedItem = await visionBoardAPI.toggleItem(id)
+      setVisionItems(visionItems.map((item) => (item.id === id ? updatedItem : item)))
+      
+      toast({
+        title: "Success",
+        description: `Vision item marked as ${updatedItem.is_completed ? 'completed' : 'pending'}!`,
+      })
+    } catch (error) {
+      console.error("Failed to toggle vision item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update vision item. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,13 +238,21 @@ export default function VisionBoard() {
 
   const filteredItems = visionItems.filter((item) => {
     const categoryMatch = selectedCategory === "all" || item.category === selectedCategory
-    const completedMatch = showCompleted || !item.isCompleted
+    const completedMatch = showCompleted || !item.is_completed
     return categoryMatch && completedMatch
   })
 
-  const completedCount = visionItems.filter((item) => item.isCompleted).length
+  const completedCount = visionItems.filter((item) => item.is_completed).length
   const totalCount = visionItems.length
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -381,18 +446,18 @@ export default function VisionBoard() {
           <Card
             key={item.id}
             className={`overflow-hidden transition-all duration-200 hover:shadow-lg ${
-              item.isCompleted ? "opacity-75 bg-muted/50" : ""
+              item.is_completed ? "opacity-75 bg-muted/50" : ""
             }`}
           >
-            {item.imageUrl && (
+            {item.image_url && (
               <div className="relative h-48 overflow-hidden">
                 <Image
-                  src={item.imageUrl || "/placeholder.svg"}
+                  src={item.image_url || "/placeholder.svg"}
                   alt={item.title}
                   fill
                   className="object-cover transition-transform duration-200 hover:scale-105"
                 />
-                {item.isCompleted && (
+                {item.is_completed && (
                   <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
                     <div className="bg-green-500 text-white rounded-full p-2">
                       <Star className="w-6 h-6 fill-current" />
@@ -403,7 +468,7 @@ export default function VisionBoard() {
             )}
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <CardTitle className={`text-lg ${item.isCompleted ? "line-through text-muted-foreground" : ""}`}>
+                <CardTitle className={`text-lg ${item.is_completed ? "line-through text-muted-foreground" : ""}`}>
                   {item.title}
                 </CardTitle>
                 <div className="flex gap-1">
@@ -422,19 +487,19 @@ export default function VisionBoard() {
             </CardHeader>
             <CardContent className="pt-0">
               <p className="text-sm text-muted-foreground mb-3">{item.description}</p>
-              {item.targetDate && (
+              {item.target_date && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                   <Calendar className="w-4 h-4" />
-                  Target: {new Date(item.targetDate).toLocaleDateString()}
+                  Target: {new Date(item.target_date).toLocaleDateString()}
                 </div>
               )}
               <Button
-                variant={item.isCompleted ? "secondary" : "default"}
+                variant={item.is_completed ? "secondary" : "default"}
                 size="sm"
                 onClick={() => handleToggleComplete(item.id)}
                 className="w-full"
               >
-                {item.isCompleted ? "Mark as Incomplete" : "Mark as Complete"}
+                {item.is_completed ? "Mark as Incomplete" : "Mark as Complete"}
               </Button>
             </CardContent>
           </Card>

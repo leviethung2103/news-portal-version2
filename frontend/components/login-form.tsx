@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,6 +26,7 @@ interface LoginError {
 
 export default function LoginForm() {
   const router = useRouter()
+  const { login } = useAuth()
   const [formData, setFormData] = useState<LoginFormData>({
     username: "",
     password: "",
@@ -85,10 +87,8 @@ export default function LoginForm() {
         throw new Error(data.message || "Login failed")
       }
 
-      // Store user data and redirect to news portal
-      localStorage.setItem("user", JSON.stringify(data.user))
-      localStorage.setItem("token", data.token)
-
+      // Use auth context to handle login
+      login(data.user, data.token)
       router.push("/news")
     } catch (err) {
       setError({
@@ -100,17 +100,13 @@ export default function LoginForm() {
   }
 
   const handleGoogleSuccess = (user: any) => {
-    // Store user data and redirect to news portal
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        name: user.name,
-        email: user.email,
-        picture: user.picture,
-      }),
-    )
-    localStorage.setItem("token", user.credential)
-
+    // Use auth context to handle login
+    const userData = {
+      name: user.name,
+      email: user.email,
+      picture: user.picture,
+    }
+    login(userData, user.credential)
     router.push("/news")
   }
 
