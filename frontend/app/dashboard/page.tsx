@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { LogOut, User, ArrowRight } from "lucide-react"
+import { LogOut, User, ArrowRight, Target, Globe } from "lucide-react"
 import Link from "next/link"
 
 interface UserData {
@@ -75,8 +75,14 @@ export default function DashboardPage() {
           <div className="flex gap-2">
             <Button asChild variant="default">
               <Link href="/news">
-                Go to News
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <Globe className="w-4 h-4 mr-2" />
+                News
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/vision-board">
+                <Target className="w-4 h-4 mr-2" />
+                Vision Board
               </Link>
             </Button>
             <Button onClick={handleLogout} variant="outline">
@@ -112,12 +118,15 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Welcome Back!</CardTitle>
-              <CardDescription>You have successfully logged in</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                Latest News
+              </CardTitle>
+              <CardDescription>Stay updated with current events</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                This is your dashboard. You can now access all the features of the application.
+                Browse the latest news articles from around the world, filtered by your interests.
               </p>
               <Button asChild className="w-full">
                 <Link href="/news">
@@ -130,22 +139,61 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Vision Board
+              </CardTitle>
+              <CardDescription>Visualize and track your goals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Create and manage your personal vision board to track your aspirations and achievements.
+              </p>
+              <Button asChild className="w-full bg-transparent" variant="outline">
+                <Link href="/vision-board">
+                  Open Vision Board
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2 lg:col-span-3">
+            <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>Common tasks and shortcuts</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
-                <Link href="/news">Browse News</Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start bg-transparent">
-                View Profile
-              </Button>
-              <Button variant="outline" className="w-full justify-start bg-transparent">
-                Settings
-              </Button>
-              <Button variant="outline" className="w-full justify-start bg-transparent">
-                Help & Support
-              </Button>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
+                  asChild
+                >
+                  <Link href="/news">
+                    <Globe className="w-6 h-6" />
+                    Browse News
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
+                  asChild
+                >
+                  <Link href="/vision-board">
+                    <Target className="w-6 h-6" />
+                    Vision Board
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent">
+                  <User className="w-6 h-6" />
+                  Profile
+                </Button>
+                <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent">
+                  <User className="w-6 h-6" />
+                  Settings
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -60,6 +60,19 @@ export default function Sidebar() {
                 </div>
               </div>
 
+              <div className="mb-4">
+                <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">VISION</h3>
+                <div className="space-y-1">
+                  <Link href="/vision-board">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-2 h-4 w-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Vision Board
+                    </Button>
+                  </Link>
+                </div>
+              </div>
 
               <div className="mb-4">
                 <h3 className="mb-2 px-2 text-sm font-semibold text-muted-foreground">SETTINGS</h3>
