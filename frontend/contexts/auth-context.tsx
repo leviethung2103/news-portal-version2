@@ -34,6 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem("user")
     const storedToken = localStorage.getItem("token")
 
+    // Clear dev bypass data if it exists
+    if (storedToken === "dev-token" || (storedUser && storedUser.includes("devuser@example.com"))) {
+      localStorage.removeItem("user")
+      localStorage.removeItem("token")
+      setUser(null)
+      setToken(null)
+      setIsLoading(false)
+      return
+    }
+
     if (storedUser && storedToken) {
       try {
         const userData = JSON.parse(storedUser)

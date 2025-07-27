@@ -16,7 +16,7 @@ news-portal-dashboard/
 
 - Python 3.12+
 - Node.js 18+
-- Poetry (for Python dependency management)
+- conda (for Python environment management)
 - npm or yarn
 
 ## Backend Setup (FastAPI)
@@ -26,14 +26,19 @@ news-portal-dashboard/
 cd fastapi-optimized-project
 ```
 
-2. Install dependencies with Poetry:
+2. Create and activate a conda environment:
 ```bash
-poetry install
+conda create -n news-portal python=3.12
+conda activate news-portal
 ```
 
-3. Activate the virtual environment:
+3. Install dependencies:
 ```bash
-poetry shell
+pip install -r requirements.txt
+
+# OR install conda packages where available
+conda install fastapi uvicorn
+pip install -r requirements.txt  # for packages not available in conda
 ```
 
 4. Start the backend server:
@@ -175,7 +180,7 @@ You can add more feeds through the settings page.
 ### Backend Issues
 
 1. **Cannot connect to backend**: Make sure FastAPI server is running on port 8000
-2. **Import errors**: Ensure you're in the Poetry virtual environment
+2. **Import errors**: Ensure you're in the conda environment
 3. **RSS parsing errors**: Check that RSS URLs are valid and accessible
 
 ### Frontend Issues

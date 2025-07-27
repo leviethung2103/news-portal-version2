@@ -312,13 +312,13 @@ export default function SettingsPage() {
         <div className="flex">
           <Sidebar />
           <main className="flex-1 lg:ml-64">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Settings className="h-6 w-6" />
-                <h1 className="text-3xl font-bold">Settings</h1>
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6 animate-fade-in">
+                <Settings className="h-5 h-5 sm:h-6 sm:w-6" />
+                <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
               </div>
 
-      <Tabs defaultValue="feeds" className="space-y-6">
+      <Tabs defaultValue="feeds" className="space-y-4 sm:space-y-6 animate-slide-in-up delay-100">
         <TabsList className="grid w-full grid-cols-3 h-auto">
           <TabsTrigger value="feeds" className="text-xs sm:text-sm">
             <span className="hidden sm:inline">RSS </span>Feeds
@@ -331,7 +331,7 @@ export default function SettingsPage() {
 
         {/* RSS Feeds Tab */}
         <TabsContent value="feeds">
-          <Card>
+          <Card className="animate-slide-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -509,7 +509,7 @@ export default function SettingsPage() {
 
         {/* Cron Jobs Tab */}
         <TabsContent value="cron">
-          <Card>
+          <Card className="animate-slide-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -654,7 +654,7 @@ export default function SettingsPage() {
         {/* Status Tab */}
         <TabsContent value="status">
           <div className="space-y-6">
-            <Card>
+            <Card className="animate-slide-in-up delay-200 hover:shadow-lg transition-shadow duration-300">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -703,7 +703,7 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="animate-slide-in-up delay-300 hover:shadow-lg transition-shadow duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Rss className="h-5 w-5" />
@@ -711,22 +711,22 @@ export default function SettingsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{feeds.length}</div>
-                    <div className="text-sm text-gray-600">Total Feeds</div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg hover:shadow-md transition-all duration-200 hover:scale-105">
+                    <div className="text-lg sm:text-2xl font-bold text-blue-600">{feeds.length}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Total Feeds</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{feeds.filter(f => f.active).length}</div>
-                    <div className="text-sm text-gray-600">Active Feeds</div>
+                  <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg hover:shadow-md transition-all duration-200 hover:scale-105">
+                    <div className="text-lg sm:text-2xl font-bold text-green-600">{feeds.filter(f => f.active).length}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Active Feeds</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{cronJobs.length}</div>
-                    <div className="text-sm text-gray-600">Cron Jobs</div>
+                  <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg hover:shadow-md transition-all duration-200 hover:scale-105">
+                    <div className="text-lg sm:text-2xl font-bold text-purple-600">{cronJobs.length}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Cron Jobs</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{cronJobs.filter(j => j.active).length}</div>
-                    <div className="text-sm text-gray-600">Active Jobs</div>
+                  <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg hover:shadow-md transition-all duration-200 hover:scale-105">
+                    <div className="text-lg sm:text-2xl font-bold text-orange-600">{cronJobs.filter(j => j.active).length}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Active Jobs</div>
                   </div>
                 </div>
               </CardContent>

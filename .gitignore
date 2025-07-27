@@ -102,7 +102,7 @@ venv.bak/
 
 frontend/test-results
 frontend/tests/reports
-
+fastapi-optimized-project/tests/reports
 # Jupyter Notebook
 .ipynb_checkpoints
 

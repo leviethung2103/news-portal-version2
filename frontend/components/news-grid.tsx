@@ -31,7 +31,31 @@ export default function NewsGrid() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
+  const [readArticles, setReadArticles] = useState<Set<string>>(new Set())
   const observer = useRef<IntersectionObserver>()
+
+  // Fetch read articles on component mount
+  useEffect(() => {
+    const fetchReadArticles = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (token) {
+          const response = await fetch('/api/articles/read-articles', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          if (response.ok) {
+            const readIds = await response.json()
+            setReadArticles(new Set(readIds))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch read articles:', error)
+      }
+    }
+    fetchReadArticles()
+  }, [])
 
   const fetchNews = useCallback(async (page = 1, reset = false) => {
     try {
@@ -81,9 +105,17 @@ export default function NewsGrid() {
     if (node) observer.current.observe(node)
   }, [loadingMore, hasMore, currentPage, fetchNews])
 
+  const handleRemoveArticle = useCallback((articleId: string) => {
+    setReadArticles(prev => new Set([...prev, articleId]))
+    setArticles(prev => prev.filter(article => article.id !== articleId))
+  }, [])
+
   useEffect(() => {
     fetchNews(1, true)
   }, [fetchNews])
+
+  // Filter out read articles from the display
+  const filteredArticles = articles.filter(article => !readArticles.has(article.id))
 
 
   if (loading) {
@@ -92,22 +124,22 @@ export default function NewsGrid() {
 
   return (
     <div className="space-y-6">
-      {articles.length === 0 ? (
+      {filteredArticles.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No articles found.</p>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article, index) => {
-              if (articles.length === index + 1) {
+            {filteredArticles.map((article, index) => {
+              if (filteredArticles.length === index + 1) {
                 return (
                   <div ref={lastArticleElementRef} key={article.id}>
-                    <NewsCard article={article} />
+                    <NewsCard article={article} onRemove={handleRemoveArticle} />
                   </div>
                 )
               } else {
-                return <NewsCard key={article.id} article={article} />
+                return <NewsCard key={article.id} article={article} onRemove={handleRemoveArticle} />
               }
             })}
           </div>

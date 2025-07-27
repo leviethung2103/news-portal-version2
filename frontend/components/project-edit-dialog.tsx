@@ -41,13 +41,12 @@ export default function ProjectEditDialog({
   })
   const [tasks, setTasks] = useState<Task[]>([])
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [taskFormData, setTaskFormData] = useState({
     name: "",
     description: "",
     status: "not_started" as const,
     priority: "medium" as const,
-    start_date: "",
-    end_date: "",
     progress: 0,
     estimated_hours: 0
   })
@@ -142,39 +141,72 @@ export default function ProjectEditDialog({
     if (!project) return
 
     try {
-      const taskData = {
-        ...taskFormData,
-        start_date: taskFormData.start_date ? new Date(taskFormData.start_date).toISOString() : undefined,
-        end_date: taskFormData.end_date ? new Date(taskFormData.end_date).toISOString() : undefined,
-        project_id: project.id
+      if (editingTask) {
+        // Update existing task
+        const updateData = {
+          name: taskFormData.name,
+          description: taskFormData.description || undefined,
+          status: taskFormData.status,
+          priority: taskFormData.priority,
+          progress: taskFormData.progress,
+          estimated_hours: taskFormData.estimated_hours || undefined
+        }
+        
+        const updatedTask = await projectApi.updateTask(editingTask.id, updateData)
+        setTasks(tasks.map(task => task.id === editingTask.id ? updatedTask : task))
+        
+        toast({
+          title: "Success",
+          description: "Task updated successfully!",
+        })
+      } else {
+        // Create new task
+        const taskData = {
+          ...taskFormData,
+          project_id: project.id
+        }
+        
+        const newTask = await projectApi.createTask(project.id, taskData)
+        setTasks([...tasks, newTask])
+        
+        toast({
+          title: "Success",
+          description: "Task created successfully!",
+        })
       }
       
-      const newTask = await projectApi.createTask(project.id, taskData)
-      setTasks([...tasks, newTask])
+      // Reset form and close dialog
       setIsTaskDialogOpen(false)
+      setEditingTask(null)
       setTaskFormData({
         name: "",
         description: "",
         status: "not_started",
         priority: "medium",
-        start_date: "",
-        end_date: "",
         progress: 0,
         estimated_hours: 0
       })
-      
-      toast({
-        title: "Success",
-        description: "Task created successfully!",
-      })
     } catch (error) {
-      console.error('Error creating task:', error)
+      console.error('Error with task:', error)
       toast({
         title: "Error",
-        description: "Failed to create task. Please try again.",
+        description: `Failed to ${editingTask ? 'update' : 'create'} task. Please try again.`,
         variant: "destructive",
       })
     }
+  }
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task)
+    setTaskFormData({
+      name: task.name,
+      description: task.description || "",
+      status: task.status,
+      priority: task.priority,
+      progress: task.progress,
+      estimated_hours: task.estimated_hours || 0
+    })
+    setIsTaskDialogOpen(true)
   }
 
   const handleTaskDelete = async (taskId: number) => {
@@ -372,6 +404,13 @@ export default function ProjectEditDialog({
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleTaskEdit(task)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleTaskDelete(task.id)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -383,20 +422,11 @@ export default function ProjectEditDialog({
                         <p className="text-sm text-muted-foreground">{task.description}</p>
                       )}
                       
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {task.start_date && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            Start: {format(parseISO(task.start_date), 'MMM dd, yyyy')}
-                          </span>
-                        )}
-                        {task.end_date && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            Due: {format(parseISO(task.end_date), 'MMM dd, yyyy')}
-                          </span>
-                        )}
-                      </div>
+                      {task.estimated_hours && (
+                        <div className="text-sm text-muted-foreground">
+                          Estimated: {task.estimated_hours} hours
+                        </div>
+                      )}
                       
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -414,11 +444,24 @@ export default function ProjectEditDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Task Creation Dialog */}
-      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+      {/* Task Creation/Edit Dialog */}
+      <Dialog open={isTaskDialogOpen} onOpenChange={(open) => {
+        setIsTaskDialogOpen(open)
+        if (!open) {
+          setEditingTask(null)
+          setTaskFormData({
+            name: "",
+            description: "",
+            status: "not_started",
+            priority: "medium",
+            progress: 0,
+            estimated_hours: 0
+          })
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
+            <DialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTaskSubmit} className="space-y-4">
             <div>
@@ -431,72 +474,81 @@ export default function ProjectEditDialog({
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="task-description">Description</Label>
-              <Textarea
-                id="task-description"
-                value={taskFormData.description}
-                onChange={(e) => setTaskFormData({ ...taskFormData, description: e.target.value })}
-                placeholder="Task description..."
-                rows={2}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="task-status">Status</Label>
-                <Select value={taskFormData.status} onValueChange={(value: any) => setTaskFormData({ ...taskFormData, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="not_started">Not Started</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="blocked">Blocked</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="task-priority">Priority</Label>
-                <Select value={taskFormData.priority} onValueChange={(value: any) => setTaskFormData({ ...taskFormData, priority: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="task-start-date">Start Date</Label>
-                <Input
-                  id="task-start-date"
-                  type="date"
-                  value={taskFormData.start_date}
-                  onChange={(e) => setTaskFormData({ ...taskFormData, start_date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="task-end-date">End Date</Label>
-                <Input
-                  id="task-end-date"
-                  type="date"
-                  value={taskFormData.end_date}
-                  onChange={(e) => setTaskFormData({ ...taskFormData, end_date: e.target.value })}
-                />
-              </div>
-            </div>
+            {/* Show additional fields only when editing */}
+            {editingTask && (
+              <>
+                <div>
+                  <Label htmlFor="task-description">Description</Label>
+                  <Textarea
+                    id="task-description"
+                    value={taskFormData.description}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, description: e.target.value })}
+                    placeholder="Task description..."
+                    rows={2}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="task-status">Status</Label>
+                    <Select value={taskFormData.status} onValueChange={(value: any) => setTaskFormData({ ...taskFormData, status: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="not_started">Not Started</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="blocked">Blocked</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="task-priority">Priority</Label>
+                    <Select value={taskFormData.priority} onValueChange={(value: any) => setTaskFormData({ ...taskFormData, priority: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="task-progress">Progress (%)</Label>
+                    <Input
+                      id="task-progress"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={taskFormData.progress}
+                      onChange={(e) => setTaskFormData({ ...taskFormData, progress: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="task-estimated-hours">Estimated Hours</Label>
+                    <Input
+                      id="task-estimated-hours"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={taskFormData.estimated_hours}
+                      onChange={(e) => setTaskFormData({ ...taskFormData, estimated_hours: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit">
-                Create Task
+                {editingTask ? 'Update Task' : 'Create Task'}
               </Button>
             </div>
           </form>

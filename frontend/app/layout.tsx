@@ -7,8 +7,6 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { Toaster } from "@/components/ui/toaster"
 
-import DevAuthBypass from "@/components/dev-auth-bypass"
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -26,7 +24,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <DevAuthBypass />
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             {children}

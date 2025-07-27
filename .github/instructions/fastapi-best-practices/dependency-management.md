@@ -10,109 +10,86 @@ applyTo: '**/pyproject.toml'
 ### 1. Creating a Virtual Environment
 
 ```bash
-# Create a new virtual environment
-python -m venv .venv
-
+- Commit your `requirements.txt` (and optionally `pyproject.toml` if using) to version control
+- Use `requirements.txt` to ensure reproducible builds across environments
 # Activate on Unix/macOS
 source .venv/bin/activate
 
-# Activate on Windows (PowerShell)
+conda create -n myenv python=3.12
+conda activate myenv
+
+# Install all dependencies (including development)
+pip install -r requirements.txt
+
+# Add a new dependency
+pip install package-name
+pip freeze > requirements.txt
+
+# Update all dependencies (manually update requirements.txt as needed)
+pip install --upgrade -r requirements.txt
+
+# Check for outdated packages
+pip list --outdated
+
+# Run tests
+pytest
+
+# Run tests with coverage
+pytest --cov=app --cov-report=term-missing
+
+# Format code
+black .
+isort .
+
+# Type checking
+mypy .
 .venv\Scripts\Activate.ps1
 
 # Activate on Windows (Command Prompt)
 .venv\Scripts\activate.bat
 ```
 
-### 2. Using Poetry for Dependency Management
 
-#### Installation
+### 2. Using Conda and pip for Dependency Management
+
+#### Installation and Environment Setup
 ```bash
-# Install Poetry (recommended way)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create a new conda environment
+conda create -n myenv python=3.12
+conda activate myenv
 
-# Verify installation
-poetry --version
-```
-
-#### Basic Commands
+# (Optional) Create a virtual environment with venv
+python -m venv .venv
+source .venv/bin/activate  # On Unix/macOS
+# .venv\Scripts\activate.bat  # On Windows (Command Prompt)
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 ```bash
-# Initialize a new project
-poetry new project-name
+# Install dependencies from requirements.txt
+pip install -r requirements.txt
 
-# Install dependencies
-poetry install
+# Add a new dependency
+pip install package-name
+# (Optional) Add to requirements.txt
+pip freeze > requirements.txt
 
-# Add a production dependency
-poetry add package-name
+# Update all dependencies (manually update requirements.txt as needed)
+pip install --upgrade -r requirements.txt
 
-# Add a development dependency
-poetry add --group dev package-name
+# Run your application
+python script.py
 
-# Update all dependencies
-poetry update
-
-# Run commands within the virtual environment
-poetry run python script.py
-
-# Start a shell within the virtual environment
-poetry shell
-
-# Export requirements.txt (if needed)
-poetry export -f requirements.txt --output requirements.txt --without-hashes
+# Export current environment to requirements.txt
+pip freeze > requirements.txt
 ```
 
 ## Project Structure
 
-### Recommended `pyproject.toml` Structure
-
-```toml
-[tool.poetry]
-name = "project-name"
-version = "0.1.0"
-description = "Project description"
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-fastapi = "^0.104.0"
-uvicorn = "^0.24.0"
-pydantic = "^2.5.0"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.23"}
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
-pytest-asyncio = "^0.21.1"
-black = "^23.7.0"
-isort = "^5.12.0"
-mypy = "^1.5.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 88
-target-version = ['py312']
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
-line_length = 88
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-```
-
 ## Best Practices
 
 ### 1. Version Control
-- Commit both `pyproject.toml` and `poetry.lock` to version control
-- The `poetry.lock` file ensures reproducible builds across environments
-- Never manually edit the `poetry.lock` file
 
 ### 2. Dependency Management
 - Pin exact versions for production dependencies
@@ -122,27 +99,35 @@ python_files = ["test_*.py"]
 
 ### 3. Development Workflow
 ```bash
+# Create and activate your environment (if not already active)
+conda create -n myenv python=3.12
+conda activate myenv
+
 # Install all dependencies (including development)
-poetry install
+pip install -r requirements.txt
 
 # Add a new dependency
-poetry add package-name
+pip install package-name
+pip freeze > requirements.txt
 
-# Update a specific package
-poetry update package-name
+# Update all dependencies (manually update requirements.txt as needed)
+pip install --upgrade -r requirements.txt
 
 # Check for outdated packages
-poetry show --outdated
+pip list --outdated
 
 # Run tests
-poetry run pytest
+pytest
+
+# Run tests with coverage
+pytest --cov=app --cov-report=term-missing
 
 # Format code
-poetry run black .
-poetry run isort .
+black .
+isort .
 
 # Type checking
-poetry run mypy .
+mypy .
 ```
 
 ### 4. CI/CD Integration

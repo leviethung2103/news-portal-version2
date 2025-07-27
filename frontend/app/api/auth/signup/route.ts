@@ -4,42 +4,49 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json()
+    const { username, email, password } = await request.json()
 
     // Validate input
-    if (!username || !password) {
-      return NextResponse.json({ message: "Username and password are required" }, { status: 400 })
+    if (!username || !email || !password) {
+      return NextResponse.json({ message: "Username, email, and password are required" }, { status: 400 })
     }
 
-    // Forward request to FastAPI backend
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/login/json`, {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ message: "Please enter a valid email address" }, { status: 400 })
+    }
+
+    // Use the working signup endpoint
+    const signupResponse = await fetch(`${API_BASE_URL}/api/v1/auth/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         username,
+        email,
         password,
       }),
     })
 
-    const data = await response.json()
+    const signupData = await signupResponse.json()
 
-    if (!response.ok) {
+    if (!signupResponse.ok) {
       return NextResponse.json(
-        { message: data.detail || data.message || "Login failed" },
-        { status: response.status }
+        { message: signupData.detail || signupData.message || "Failed to create account" },
+        { status: signupResponse.status }
       )
     }
 
     // Return the response from the backend
     return NextResponse.json({
-      message: "Login successful",
-      user: data.user,
-      token: data.access_token,
+      message: "Account created successfully",
+      user: signupData.user,
+      token: signupData.access_token,
     })
   } catch (error) {
-    console.error("Login error:", error)
+    console.error("Signup error:", error)
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return NextResponse.json(

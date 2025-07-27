@@ -17,22 +17,18 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "next-themes"
 import { useNews } from "@/components/news-provider"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function Header() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const { theme, setTheme } = useTheme()
   const { setSearchTerm, toggleSidebar } = useNews()
+  const { logout } = useAuth()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setSearchTerm(searchQuery)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("user")
-    localStorage.removeItem("token")
-    router.push("/login")
   }
 
   return (
@@ -81,7 +77,7 @@ export default function Header() {
               <DropdownMenuItem>Saved Articles</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>

@@ -57,7 +57,21 @@ export default function ProjectsPage() {
         projectApi.getProjectSummary(),
         projectApi.getRecentTasks(5)
       ])
-      setProjects(projectsData)
+      
+      // Load tasks for each project
+      const projectsWithTasks = await Promise.all(
+        projectsData.map(async (project) => {
+          try {
+            const tasks = await projectApi.getProjectTasks(project.id)
+            return { ...project, tasks }
+          } catch (error) {
+            console.error(`Failed to load tasks for project ${project.id}:`, error)
+            return { ...project, tasks: [] }
+          }
+        })
+      )
+      
+      setProjects(projectsWithTasks)
       setSummary(summaryData)
       setRecentTasks(tasksData)
     } catch (error) {
@@ -134,12 +148,23 @@ export default function ProjectsPage() {
     loadData()
   }
 
-  const handleProjectDeleted = (projectId: number) => {
+  const handleProjectDeleted = async (projectId: number) => {
+    // Immediately update UI to remove the deleted project
     setProjects(projects.filter(p => p.id !== projectId))
     setIsEditDialogOpen(false)
     setEditingProject(null)
-    // Reload data to get updated summary
-    loadData()
+    
+    // Reload summary and recent tasks (but not projects since we already updated them)
+    try {
+      const [summaryData, tasksData] = await Promise.all([
+        projectApi.getProjectSummary(),
+        projectApi.getRecentTasks(5)
+      ])
+      setSummary(summaryData)
+      setRecentTasks(tasksData)
+    } catch (error) {
+      console.error('Error reloading summary data:', error)
+    }
   }
 
   const handleCreateTask = (projectId: number) => {
@@ -205,29 +230,42 @@ export default function ProjectsPage() {
           <div className="flex">
             <Sidebar />
             <main className="flex-1 lg:ml-64">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex items-center gap-2">
-              <FolderOpen className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-bold">Project Management</h1>
+              <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+            <div className="flex items-center gap-2 animate-fade-in">
+              <FolderOpen className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+              <h1 className="text-2xl sm:text-3xl font-bold">Project Management</h1>
             </div>
-            <div className="flex gap-2">
-              <Button variant={selectedView === 'overview' ? 'default' : 'outline'} onClick={() => setSelectedView('overview')}>
+            <div className="flex flex-wrap gap-2 animate-slide-in-up delay-100">
+              <Button 
+                variant={selectedView === 'overview' ? 'default' : 'outline'} 
+                onClick={() => setSelectedView('overview')}
+                className="transition-all duration-200 hover:scale-105 text-sm sm:text-base"
+              >
                 Overview
               </Button>
-              <Button variant={selectedView === 'gantt' ? 'default' : 'outline'} onClick={() => setSelectedView('gantt')}>
-                <BarChart3 className="w-4 h-4 mr-2" />
+              <Button 
+                variant={selectedView === 'gantt' ? 'default' : 'outline'} 
+                onClick={() => setSelectedView('gantt')}
+                className="transition-all duration-200 hover:scale-105 text-sm sm:text-base"
+              >
+                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Timeline
               </Button>
-              <Button variant={selectedView === 'calendar' ? 'default' : 'outline'} onClick={() => setSelectedView('calendar')}>
-                <Calendar className="w-4 h-4 mr-2" />
+              <Button 
+                variant={selectedView === 'calendar' ? 'default' : 'outline'} 
+                onClick={() => setSelectedView('calendar')}
+                className="transition-all duration-200 hover:scale-105 text-sm sm:text-base"
+              >
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Calendar
               </Button>
               <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Project
+                  <Button className="transition-all duration-200 hover:scale-105 text-sm sm:text-base">
+                    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">New Project</span>
+                    <span className="sm:hidden">New</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md mx-4 max-h-[90vh] overflow-y-auto">
@@ -305,72 +343,72 @@ export default function ProjectsPage() {
 
           {/* Project Summary */}
           {summary && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 mb-8">
-              <Card>
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-6 sm:mb-8 animate-slide-in-up delay-200">
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Projects</CardTitle>
+                  <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{summary.total_projects}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{summary.total_projects}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Active</CardTitle>
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{summary.active_projects}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{summary.active_projects}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Completed</CardTitle>
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{summary.completed_projects}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">{summary.completed_projects}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Tasks</CardTitle>
+                  <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{summary.total_tasks}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{summary.total_tasks}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Tasks Done</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Tasks Done</CardTitle>
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{summary.completed_tasks}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">{summary.completed_tasks}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-xs sm:text-sm font-medium">Overdue</CardTitle>
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{summary.overdue_tasks}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-red-600">{summary.overdue_tasks}</div>
                 </CardContent>
               </Card>
             </div>
           )}
 
           {selectedView === 'overview' && (
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 animate-slide-in-up delay-300">
               {/* Projects List */}
               <div className="lg:col-span-2">
-                <Card>
+                <Card className="hover:shadow-lg transition-shadow duration-300">
                   <CardHeader>
-                    <CardTitle>Projects</CardTitle>
-                    <CardDescription>Overview of all your projects</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Projects</CardTitle>
+                    <CardDescription className="text-sm">Overview of all your projects</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {projects.length === 0 ? (
@@ -383,10 +421,10 @@ export default function ProjectsPage() {
                         <button
                           key={project.id}
                           onClick={() => handleEditProject(project)}
-                          className="border rounded-lg p-4 space-y-3 text-left hover:bg-muted/50 transition-colors w-full"
+                          className="border rounded-lg p-3 sm:p-4 space-y-3 text-left hover:bg-muted/50 hover:shadow-md transition-all duration-200 hover:scale-105 w-full"
                         >
                           <div className="flex items-center justify-between">
-                            <h3 className="font-semibold text-lg">{project.name}</h3>
+                            <h3 className="font-semibold text-base sm:text-lg truncate">{project.name}</h3>
                             <Badge className={`${getStatusColor(project.status)} text-white`}>
                               {project.status.replace('_', ' ')}
                             </Badge>
@@ -433,10 +471,10 @@ export default function ProjectsPage() {
 
               {/* Recent Tasks */}
               <div>
-                <Card>
+                <Card className="hover:shadow-lg transition-shadow duration-300">
                   <CardHeader>
-                    <CardTitle>Recent Tasks</CardTitle>
-                    <CardDescription>Latest task updates</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Recent Tasks</CardTitle>
+                    <CardDescription className="text-sm">Latest task updates</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {recentTasks.length === 0 ? (

@@ -25,10 +25,10 @@ export default function DashboardPage() {
   return (
     <AuthWrapper requireAuth={true}>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <div className="flex gap-2">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold animate-fade-in">Dashboard</h1>
+          <div className="flex flex-wrap gap-2">
             <Button asChild variant="default">
               <Link href="/news">
                 <Globe className="w-4 h-4 mr-2" />
@@ -48,106 +48,118 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="animate-slide-in-up delay-100 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <User className="w-4 h-4 sm:w-5 sm:h-5" />
                 Profile Information
               </CardTitle>
-              <CardDescription>Your account details</CardDescription>
+              <CardDescription className="text-sm">Your account details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Avatar className="w-12 h-12 sm:w-16 sm:h-16">
                   <AvatarImage src={user?.picture || "/placeholder.svg"} alt={user?.name || ""} />
                   <AvatarFallback>{user?.name ? getInitials(user.name) : "U"}</AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-semibold text-lg">{user?.name}</h3>
-                  <p className="text-muted-foreground">{user?.email}</p>
-                  {user?.username && <p className="text-sm text-muted-foreground">@{user.username}</p>}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-base sm:text-lg truncate">{user?.name}</h3>
+                  <p className="text-muted-foreground text-sm truncate">{user?.email}</p>
+                  {user?.username && <p className="text-xs sm:text-sm text-muted-foreground truncate">@{user.username}</p>}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="animate-slide-in-up delay-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                 Latest News
               </CardTitle>
-              <CardDescription>Stay updated with current events</CardDescription>
+              <CardDescription className="text-sm">Stay updated with current events</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                 Browse the latest news articles from around the world, filtered by your interests.
               </p>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full transition-all duration-200 hover:scale-105">
                 <Link href="/news">
                   View Latest News
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
                 </Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="animate-slide-in-up delay-300 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5" />
                 Vision Board
               </CardTitle>
-              <CardDescription>Visualize and track your goals</CardDescription>
+              <CardDescription className="text-sm">Visualize and track your goals</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                 Create and manage your personal vision board to track your aspirations and achievements.
               </p>
-              <Button asChild className="w-full bg-transparent" variant="outline">
+              <Button asChild className="w-full bg-transparent transition-all duration-200 hover:scale-105" variant="outline">
                 <Link href="/vision-board">
                   Open Vision Board
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
                 </Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-2 lg:col-span-3">
+          <Card className="md:col-span-2 lg:col-span-3 animate-slide-in-up delay-400 hover:shadow-lg transition-all duration-300">
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks and shortcuts</CardDescription>
+              <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+              <CardDescription className="text-sm">Common tasks and shortcuts</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <Button
                   variant="outline"
-                  className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
+                  className="h-auto p-3 sm:p-4 flex flex-col items-center gap-2 bg-transparent transition-all duration-200 hover:scale-105 hover:shadow-md"
                   asChild
                 >
                   <Link href="/news">
-                    <Globe className="w-6 h-6" />
-                    Browse News
+                    <Globe className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm">Browse News</span>
                   </Link>
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
+                  className="h-auto p-3 sm:p-4 flex flex-col items-center gap-2 bg-transparent transition-all duration-200 hover:scale-105 hover:shadow-md"
                   asChild
                 >
                   <Link href="/vision-board">
-                    <Target className="w-6 h-6" />
-                    Vision Board
+                    <Target className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm">Vision Board</span>
                   </Link>
                 </Button>
-                <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent">
-                  <User className="w-6 h-6" />
-                  Profile
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-3 sm:p-4 flex flex-col items-center gap-2 bg-transparent transition-all duration-200 hover:scale-105 hover:shadow-md"
+                  asChild
+                >
+                  <Link href="/projects">
+                    <User className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm">Projects</span>
+                  </Link>
                 </Button>
-                <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent">
-                  <User className="w-6 h-6" />
-                  Settings
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-3 sm:p-4 flex flex-col items-center gap-2 bg-transparent transition-all duration-200 hover:scale-105 hover:shadow-md"
+                  asChild
+                >
+                  <Link href="/settings">
+                    <User className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="text-xs sm:text-sm">Settings</span>
+                  </Link>
                 </Button>
               </div>
             </CardContent>

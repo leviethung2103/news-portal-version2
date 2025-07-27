@@ -11,30 +11,35 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User } from "lucide-react"
 import GoogleSignIn from "@/components/google-signin"
 import Link from "next/link"
 
-interface LoginFormData {
+interface SignupFormData {
   username: string
+  email: string
   password: string
+  confirmPassword: string
 }
 
-interface LoginError {
+interface SignupError {
   message: string
   field?: string
 }
 
-export default function LoginForm() {
+export default function SignupForm() {
   const router = useRouter()
   const { login } = useAuth()
-  const [formData, setFormData] = useState<LoginFormData>({
+  const [formData, setFormData] = useState<SignupFormData>({
     username: "",
+    email: "",
     password: "",
+    confirmPassword: "",
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<LoginError | null>(null)
+  const [error, setError] = useState<SignupError | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -50,11 +55,32 @@ export default function LoginForm() {
 
   const validateForm = (): boolean => {
     if (!formData.username.trim()) {
-      setError({ message: "Username or email is required", field: "username" })
+      setError({ message: "Username is required", field: "username" })
+      return false
+    }
+    if (formData.username.length < 3) {
+      setError({ message: "Username must be at least 3 characters long", field: "username" })
+      return false
+    }
+    if (!formData.email.trim()) {
+      setError({ message: "Email is required", field: "email" })
+      return false
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setError({ message: "Please enter a valid email address", field: "email" })
       return false
     }
     if (!formData.password) {
       setError({ message: "Password is required", field: "password" })
+      return false
+    }
+    if (formData.password.length < 6) {
+      setError({ message: "Password must be at least 6 characters long", field: "password" })
+      return false
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError({ message: "Passwords do not match", field: "confirmPassword" })
       return false
     }
     return true
@@ -71,13 +97,15 @@ export default function LoginForm() {
     setError(null)
 
     try {
-      const response = await fetch("/api/auth/login", {
+      // Call FastAPI backend for signup through Next.js API route
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           username: formData.username,
+          email: formData.email,
           password: formData.password,
         }),
       })
@@ -85,10 +113,10 @@ export default function LoginForm() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed")
+        throw new Error(data.message || "Signup failed")
       }
 
-      // Use auth context to handle login
+      // Use auth context to handle login after successful signup
       login(data.user, data.token)
       router.push("/dashboard")
     } catch (err) {
@@ -117,13 +145,13 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-full shadow-xl border-0 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80">
+    <Card className="w-full shadow-xl border-0 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 animate-fade-in">
       <CardHeader className="space-y-1 text-center pb-6">
         <div className="mx-auto w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-4">
-          <Lock className="w-6 h-6 text-primary-foreground" />
+          <User className="w-6 h-6 text-primary-foreground" />
         </div>
-        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription className="text-muted-foreground">Sign in to your account to continue</CardDescription>
+        <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
+        <CardDescription className="text-muted-foreground">Sign up to get started with your dashboard</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -149,22 +177,40 @@ export default function LoginForm() {
           </Alert>
         )}
 
-        {/* Username/Password Form */}
+        {/* Signup Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Username or Email</Label>
+            <Label htmlFor="username">Username</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 id="username"
                 name="username"
                 type="text"
-                placeholder="Enter your username or email"
+                placeholder="Enter your username"
                 value={formData.username}
                 onChange={handleInputChange}
                 className={`pl-10 ${error?.field === "username" ? "border-destructive" : ""}`}
                 disabled={isLoading}
                 autoComplete="username"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={`pl-10 ${error?.field === "email" ? "border-destructive" : ""}`}
+                disabled={isLoading}
+                autoComplete="email"
               />
             </div>
           </div>
@@ -182,7 +228,7 @@ export default function LoginForm() {
                 onChange={handleInputChange}
                 className={`pl-10 pr-10 ${error?.field === "password" ? "border-destructive" : ""}`}
                 disabled={isLoading}
-                autoComplete="current-password"
+                autoComplete="new-password"
               />
               <Button
                 type="button"
@@ -201,23 +247,55 @@ export default function LoginForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className={`pl-10 pr-10 ${error?.field === "confirmPassword" ? "border-destructive" : ""}`}
+                disabled={isLoading}
+                autoComplete="new-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={isLoading}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full transition-all duration-200 hover:scale-105" disabled={isLoading}>
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Signing in...
+                Creating account...
               </div>
             ) : (
-              "Login"
+              "Create Account"
             )}
           </Button>
         </form>
 
-        {/* Signup Link */}
+        {/* Login Link */}
         <div className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link href="/signup" className="text-primary hover:underline font-medium transition-colors">
-            Sign up
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline font-medium transition-colors">
+            Sign in
           </Link>
         </div>
       </CardContent>

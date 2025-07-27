@@ -21,22 +21,68 @@ interface FeaturedArticle {
 export default function HeroSection() {
   const [featuredArticle, setFeaturedArticle] = useState<FeaturedArticle | null>(null)
   const [loading, setLoading] = useState(true)
+  const [readArticles, setReadArticles] = useState<Set<string>>(new Set())
 
+  // Fetch read articles
   useEffect(() => {
-    const fetchFeaturedArticle = async () => {
+    const fetchReadArticles = async () => {
       try {
-        const response = await fetch("/api/news/featured")
-        const article = await response.json()
-        setFeaturedArticle(article)
+        const token = localStorage.getItem('token')
+        if (token) {
+          const response = await fetch('/api/articles/read-articles', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          if (response.ok) {
+            const readIds = await response.json()
+            setReadArticles(new Set(readIds))
+          }
+        }
       } catch (error) {
-        console.error("Error fetching featured article:", error)
-      } finally {
-        setLoading(false)
+        console.error('Failed to fetch read articles:', error)
       }
     }
-
-    fetchFeaturedArticle()
+    fetchReadArticles()
   }, [])
+
+  const fetchFeaturedArticle = useCallback(async () => {
+    try {
+      const response = await fetch("/api/news/featured")
+      const article = await response.json()
+      
+      // If the current featured article is read, fetch a new one
+      if (article && readArticles.has(article.id)) {
+        // Try to get another featured article
+        const newsResponse = await fetch("/api/news?limit=5")
+        const newsData = await newsResponse.json()
+        
+        // Find the first unread article
+        const unreadArticle = newsData.articles.find((a: any) => !readArticles.has(a.id))
+        
+        if (unreadArticle) {
+          setFeaturedArticle({
+            ...unreadArticle,
+            featured: true
+          })
+        } else {
+          setFeaturedArticle(article) // Keep original if no unread articles
+        }
+      } else {
+        setFeaturedArticle(article)
+      }
+    } catch (error) {
+      console.error("Error fetching featured article:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [readArticles])
+
+  useEffect(() => {
+    if (readArticles.size >= 0) { // Only fetch when readArticles is loaded
+      fetchFeaturedArticle()
+    }
+  }, [fetchFeaturedArticle, readArticles])
 
   if (loading) {
     return (
@@ -48,7 +94,8 @@ export default function HeroSection() {
     )
   }
 
-  if (!featuredArticle) {
+  // Don't show featured article if it's been read
+  if (!featuredArticle || readArticles.has(featuredArticle.id)) {
     return null
   }
 

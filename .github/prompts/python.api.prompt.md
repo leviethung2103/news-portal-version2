@@ -11,21 +11,26 @@ This guide describes the workflow for running Python API tests, generating repor
 
 ## Prerequisites
 - Python 3.12+
-- Poetry installed (`pip install poetry`)
-- All backend dependencies installed (`poetry install`)
+- Conda installed (or venv for virtual environments)
+- All backend dependencies installed (`pip install -r requirements.txt`)
 - FastAPI backend running (see project README)
 - (Optional) PostgreSQL and Redis running for full integration tests
 
 ## Workflow Steps
 
 ### Step 1: Prepare the Environment
-1. Activate the virtual environment:
+1. Create and activate the conda environment (if not already active):
    ```sh
-   poetry shell
+   conda create -n news-portal python=3.12
+   conda activate news-portal
    ```
-2. Ensure the backend is running:
+2. Install dependencies:
    ```sh
-   poetry run uvicorn app.main:app --reload --port 8000     
+   pip install -r requirements.txt
+   ```
+3. Ensure the backend is running:
+   ```sh
+   uvicorn app.main:app --reload --port 8000
    ```
 
 ### Step 2: Run API Tests

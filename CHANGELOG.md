@@ -3,17 +3,25 @@
 
 All notable changes to this project will be documented in this file.
 
+
 ## [Unreleased]
 
+
 ### Added
-- Client-side authentication context and wrapper (`frontend/contexts/auth-context.tsx`, `frontend/components/auth-wrapper.tsx`).
-- Playwright E2E test specs for all major pages/features:
-  - Article, Dashboard, Home, Login, News, Settings, Vision Board (`frontend/tests/*.spec.ts`).
-- Detailed Playwright test documentation in Markdown for each feature (`frontend/tests/docs/*.md`).
-- Playwright test result and error context snapshot files (`frontend/test-results/`, `frontend/tests/reports/`).
+- Playwright configuration for E2E testing (`frontend/playwright.config.ts`).
+- E2E Playwright tests for Projects page (`frontend/tests/projects.spec.ts`).
+- Product Requirements Document (`prd.md`).
+- Project management and tracking documentation (`tasks/README.md`, `tasks/project-tracking.md`).
+
 
 ### Changed
+- Updated documentation for new testing setup and project management.
 - Improved documentation clarity for new developers.
+
+
+---
+
+*Generated on 2025-07-27 by hunglv*
 
 ---
 

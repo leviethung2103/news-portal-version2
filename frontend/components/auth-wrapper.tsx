@@ -24,7 +24,7 @@ export default function AuthWrapper({
       if (requireAuth && !isAuthenticated) {
         router.push(redirectTo)
       } else if (!requireAuth && isAuthenticated) {
-        router.push("/news")
+        router.push("/dashboard")
       }
     }
   }, [isAuthenticated, isLoading, requireAuth, redirectTo, router])
