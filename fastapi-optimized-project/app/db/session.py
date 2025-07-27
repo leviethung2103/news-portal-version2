@@ -7,15 +7,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create async engine
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.APP_DEBUG,  # Set to True to see SQL queries in logs
-    future=True,
-    pool_pre_ping=True,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_recycle=3600,  # Recycle connections after 1 hour
-)
+if settings.DATABASE_URL.startswith("sqlite"):
+    # SQLite does not support pool_size/max_overflow, use NullPool and connect_args
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.APP_DEBUG,
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=NullPool,
+    )
+else:
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.APP_DEBUG,
+        future=True,
+        pool_pre_ping=True,
+        pool_size=settings.DATABASE_POOL_SIZE,
+        max_overflow=settings.DATABASE_MAX_OVERFLOW,
+        pool_recycle=3600,
+    )
 
 # Create async session factory
 async_session_factory = async_sessionmaker(

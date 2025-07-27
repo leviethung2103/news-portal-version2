@@ -47,6 +47,22 @@ class User(UserInDBBase):
 class UserInDB(UserInDBBase):
     hashed_password: str
 
+# Signup schema for frontend
+class UserSignup(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=50)
+
+    @validator('password')
+    def password_strength(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one number')
+        if not any(char.isupper() for char in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        return v
+
 # Token schemas
 class Token(BaseModel):
     access_token: str

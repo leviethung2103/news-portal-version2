@@ -1,16 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, func, select, delete
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models.project import Project, Task, ProjectStatus, TaskStatus
 from app.schemas.project import ProjectCreate, ProjectUpdate, TaskCreate, TaskUpdate, ProjectSummary, TaskSummary
 
 
 async def get_project(db: AsyncSession, project_id: int, user_id: int) -> Optional[Project]:
     """Get a single project by ID for a specific user."""
-    query = select(Project).where(
-        and_(Project.id == project_id, Project.user_id == user_id)
-    )
+    query = select(Project).where(and_(Project.id == project_id, Project.user_id == user_id))
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
@@ -31,7 +29,9 @@ async def create_project(db: AsyncSession, project: ProjectCreate, user_id: int)
     return db_project
 
 
-async def update_project(db: AsyncSession, project_id: int, user_id: int, project_update: ProjectUpdate) -> Optional[Project]:
+async def update_project(
+    db: AsyncSession, project_id: int, user_id: int, project_update: ProjectUpdate
+) -> Optional[Project]:
     """Update an existing project."""
     db_project = await get_project(db, project_id, user_id)
     if db_project:
@@ -55,9 +55,7 @@ async def delete_project(db: AsyncSession, project_id: int, user_id: int) -> boo
 
 async def get_project_with_tasks(db: AsyncSession, project_id: int, user_id: int) -> Optional[Project]:
     """Get a project with its tasks loaded."""
-    query = select(Project).where(
-        and_(Project.id == project_id, Project.user_id == user_id)
-    )
+    query = select(Project).where(and_(Project.id == project_id, Project.user_id == user_id))
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
@@ -71,10 +69,7 @@ async def get_project_summary(db: AsyncSession, user_id: int) -> ProjectSummary:
 
     # Count active projects
     active_projects_query = select(func.count(Project.id)).where(
-        and_(
-            Project.user_id == user_id,
-            Project.status.in_([ProjectStatus.PLANNING, ProjectStatus.IN_PROGRESS])
-        )
+        and_(Project.user_id == user_id, Project.status.in_([ProjectStatus.PLANNING, ProjectStatus.IN_PROGRESS]))
     )
     active_projects_result = await db.execute(active_projects_query)
     active_projects = active_projects_result.scalar() or 0
@@ -92,20 +87,20 @@ async def get_project_summary(db: AsyncSession, user_id: int) -> ProjectSummary:
     total_tasks = total_tasks_result.scalar() or 0
 
     # Count completed tasks
-    completed_tasks_query = select(func.count(Task.id)).join(Project).where(
-        and_(Project.user_id == user_id, Task.status == TaskStatus.COMPLETED)
+    completed_tasks_query = (
+        select(func.count(Task.id))
+        .join(Project)
+        .where(and_(Project.user_id == user_id, Task.status == TaskStatus.COMPLETED))
     )
     completed_tasks_result = await db.execute(completed_tasks_query)
     completed_tasks = completed_tasks_result.scalar() or 0
-    
+
     # Count overdue tasks
     now = datetime.utcnow()
-    overdue_tasks_query = select(func.count(Task.id)).join(Project).where(
-        and_(
-            Project.user_id == user_id,
-            Task.end_date < now,
-            Task.status != TaskStatus.COMPLETED
-        )
+    overdue_tasks_query = (
+        select(func.count(Task.id))
+        .join(Project)
+        .where(and_(Project.user_id == user_id, Task.end_date < now, Task.status != TaskStatus.COMPLETED))
     )
     overdue_tasks_result = await db.execute(overdue_tasks_query)
     overdue_tasks = overdue_tasks_result.scalar() or 0
@@ -116,24 +111,20 @@ async def get_project_summary(db: AsyncSession, user_id: int) -> ProjectSummary:
         completed_projects=completed_projects,
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
-        overdue_tasks=overdue_tasks
+        overdue_tasks=overdue_tasks,
     )
 
 
 async def get_task(db: AsyncSession, task_id: int, user_id: int) -> Optional[Task]:
     """Get a single task by ID for a specific user."""
-    query = select(Task).join(Project).where(
-        and_(Task.id == task_id, Project.user_id == user_id)
-    )
+    query = select(Task).join(Project).where(and_(Task.id == task_id, Project.user_id == user_id))
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
 
 async def get_tasks_by_project(db: AsyncSession, project_id: int, user_id: int) -> List[Task]:
     """Get all tasks for a specific project."""
-    query = select(Task).join(Project).where(
-        and_(Task.project_id == project_id, Project.user_id == user_id)
-    )
+    query = select(Task).join(Project).where(and_(Task.project_id == project_id, Project.user_id == user_id))
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -148,16 +139,21 @@ async def get_user_tasks(db: AsyncSession, user_id: int, skip: int = 0, limit: i
 async def create_task(db: AsyncSession, task: TaskCreate, user_id: int) -> Optional[Task]:
     """Create a new task."""
     # Verify project belongs to user
-    project_query = select(Project).where(
-        and_(Project.id == task.project_id, Project.user_id == user_id)
-    )
+    project_query = select(Project).where(and_(Project.id == task.project_id, Project.user_id == user_id))
     project_result = await db.execute(project_query)
     project = project_result.scalar_one_or_none()
-    
+
     if not project:
         return None
-        
-    db_task = Task(**task.dict())
+
+    # Convert start_date and end_date to naive datetimes if they are timezone-aware
+    task_data = task.dict()
+    for field in ["start_date", "end_date"]:
+        dt = task_data.get(field)
+        if dt is not None and hasattr(dt, "tzinfo") and dt.tzinfo is not None:
+            # Convert to naive in UTC
+            task_data[field] = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    db_task = Task(**task_data)
     db.add(db_task)
     await db.commit()
     await db.refresh(db_task)
@@ -188,10 +184,14 @@ async def delete_task(db: AsyncSession, task_id: int, user_id: int) -> bool:
 
 async def get_recent_tasks(db: AsyncSession, user_id: int, limit: int = 10) -> List[TaskSummary]:
     """Get recent tasks for a user."""
-    query = select(Task, Project.name.label('project_name')).join(Project).where(
-        Project.user_id == user_id
-    ).order_by(Task.updated_at.desc()).limit(limit)
-    
+    query = (
+        select(Task, Project.name.label("project_name"))
+        .join(Project)
+        .where(Project.user_id == user_id)
+        .order_by(Task.updated_at.desc())
+        .limit(limit)
+    )
+
     result = await db.execute(query)
     tasks = result.all()
 
@@ -204,7 +204,7 @@ async def get_recent_tasks(db: AsyncSession, user_id: int, limit: int = 10) -> L
             progress=task.Task.progress,
             start_date=task.Task.start_date,
             end_date=task.Task.end_date,
-            project_name=task.project_name
+            project_name=task.project_name,
         )
         for task in tasks
     ]

@@ -22,6 +22,7 @@ class User(Base):
     # Relationships
     vision_items = relationship("VisionItem", back_populates="user", cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="user", cascade="all, delete-orphan")
+    read_articles = relationship("UserReadArticle", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"

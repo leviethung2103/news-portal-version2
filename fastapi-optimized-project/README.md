@@ -22,7 +22,7 @@ A production-ready FastAPI project with performance optimizations, async support
 - Redis 6+
 - Poetry (for dependency management)
 
-## Installation
+## Installation (Conda Only)
 
 1. **Clone the repository**
    ```bash
@@ -30,34 +30,86 @@ A production-ready FastAPI project with performance optimizations, async support
    cd fastapi-optimized
    ```
 
-2. **Set up a virtual environment and install dependencies**
+2. **Create and activate a conda environment**
    ```bash
-   poetry install
+   conda create -n news-portal python=3.12
+   conda activate news-portal
    ```
 
-3. **Set up environment variables**
+3. **Install dependencies**
+   ```bash
+   # Install pip dependencies in conda environment
+   pip install -r requirements.txt
+
+   # OR install conda packages where available
+   conda install fastapi uvicorn
+   pip install -r requirements.txt  # for packages not available in conda
+   ```
+
+4. **Set up environment variables**
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
-4. **Set up the database**
+5. **Set up the database**
    ```bash
    # Create a PostgreSQL database
    createdb fastapi_optimized
-   
+
    # Run migrations
    alembic upgrade head
    ```
 
-5. **Run the application**
+6. **Run the application**
    ```bash
    # Development
    uvicorn app.main:app --reload
-   
+
    # Production (with Gunicorn)
    gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
    ```
+
+## Running with Conda
+
+You can use conda to manage your environment and dependencies for this project. Poetry is not required.
+
+### Using the built-in run.py script (Recommended)
+
+This project includes a convenient `run.py` script that handles uvicorn startup with pre-configured settings.
+
+```bash
+# Navigate to the project directory
+cd fastapi-optimized-project
+
+# For development (with auto-reload)
+python run.py dev
+
+# For production
+python run.py prod
+
+# Other available commands
+python run.py test      # Run tests
+python run.py lint      # Run code linters
+python run.py format    # Format code
+python run.py shell     # Open Python shell with app context
+python run.py db-create # Create database tables
+python run.py db-drop   # Drop all database tables
+python run.py help      # Show help message
+```
+
+### Direct uvicorn commands with conda
+
+```bash
+# Development mode (with auto-reload)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Production mode
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Using conda's python specifically
+$(which python) -m uvicorn app.main:app --reload
+```
 
 ## Project Structure
 
@@ -102,15 +154,64 @@ flake8
 mypy .
 ```
 
-### Testing
 
-```bash
-# Run tests
-pytest
+### API Testing & Reporting Workflow
 
-# Run tests with coverage
-pytest --cov=app --cov-report=term-missing
-```
+#### Prerequisites
+- Python 3.12+
+- Conda installed (or venv for virtual environments)
+- All backend dependencies installed (`pip install -r requirements.txt`)
+- FastAPI backend running (see above)
+- (Optional) PostgreSQL and Redis running for full integration tests
+
+#### Workflow Steps
+
+1. **Prepare the Environment**
+   ```sh
+   conda create -n news-portal python=3.12
+   conda activate news-portal
+   pip install -r requirements.txt
+   ```
+   Ensure the backend is running:
+   ```sh
+   uvicorn app.main:app --reload --port 8000
+   ```
+
+2. **Run API Tests**
+   - To run all tests:
+     ```sh
+     pytest
+     ```
+   - To run with coverage:
+     ```sh
+     pytest --cov=app --cov-report=term-missing
+     ```
+   - To run integration tests (if present):
+     ```sh
+     python ../../test_integration.py
+     ```
+
+3. **Generate Test Reports**
+   - Pytest will output results to the terminal by default.
+   - To generate a JUnit XML report:
+     ```sh
+     pytest --junitxml=tests/reports/python-api-report.xml
+     ```
+   - To generate an HTML report (requires `pytest-html`):
+     ```sh
+     pytest --html=tests/reports/python-api-report.html
+     ```
+
+4. **Review and Interpret Results**
+   - Review the summary for passed/failed tests.
+   - For integration tests, check the printed summary and any error messages.
+   - Reports are saved in `tests/reports/` for CI/CD and manual review.
+
+5. **Success Criteria**
+   - ✅ All critical API endpoints are covered by tests.
+   - ✅ All tests pass (or failures are documented and triaged).
+   - ✅ Reports are generated and stored in `tests/reports/`.
+   - ✅ Code follows Python best practices and project conventions.
 
 ### Database Migrations
 

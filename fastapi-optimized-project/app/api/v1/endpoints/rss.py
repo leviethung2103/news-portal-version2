@@ -369,6 +369,23 @@ async def crawl_batch_articles(
         "article_ids": article_ids
     }
 
+# Validate RSS URL endpoint
+@router.post("/validate")
+async def validate_rss_url(request: dict):
+    """Validate an RSS URL to check if it's accessible and contains valid RSS content"""
+    rss_url = request.get("url")
+    if not rss_url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    
+    try:
+        validation_result = await rss_service.validate_rss_url(rss_url)
+        return validation_result
+    except Exception as e:
+        return {
+            "valid": False,
+            "error": f"Validation failed: {str(e)}"
+        }
+
 # Legacy endpoint for backward compatibility
 @router.get("/rss")
 async def get_rss_items_by_url(rss_url: str = Query(..., description="RSS feed URL")):

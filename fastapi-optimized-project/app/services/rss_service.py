@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 import feedparser
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
-from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.session import async_session_factory
 from ..db.crud_rss import rss_feed, rss_article, RssArticleCreate
 from ..models.rss import RssFeed
@@ -14,15 +15,117 @@ logger = logging.getLogger(__name__)
 
 class RssService:
     def __init__(self):
-        self.session_timeout = 10
+        self.session_timeout = 30  # Increased timeout for DNS resolution
         self.max_articles_per_feed = 100
+        self.session = self._create_session()
+    
+    def _create_session(self):
+        """Create a requests session with retry strategy and proper headers."""
+        session = requests.Session()
+        
+        # Configure retry strategy
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "OPTIONS"],
+            backoff_factor=1
+        )
+        
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
+        # Set proper headers to avoid blocking
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache'
+        })
+        
+        return session
+    
+    async def validate_rss_url(self, rss_url: str) -> dict:
+        """Validate an RSS URL by attempting to fetch and parse it."""
+        try:
+            logger.info(f"Validating RSS URL: {rss_url}")
+            
+            # First, try a HEAD request to check if the URL is accessible
+            try:
+                head_response = self.session.head(rss_url, timeout=10, allow_redirects=True)
+                logger.info(f"HEAD request status: {head_response.status_code}")
+            except Exception as e:
+                logger.warning(f"HEAD request failed, continuing with GET: {e}")
+            
+            # Fetch the RSS content
+            response = self.session.get(rss_url, timeout=self.session_timeout)
+            response.raise_for_status()
+            
+            # Try to parse as RSS
+            feed = feedparser.parse(response.content)
+            
+            if feed.bozo and feed.bozo_exception:
+                return {
+                    "valid": False,
+                    "error": f"RSS parsing error: {feed.bozo_exception}",
+                    "status_code": response.status_code
+                }
+            
+            if not feed.entries:
+                return {
+                    "valid": False,
+                    "error": "RSS feed contains no entries",
+                    "status_code": response.status_code
+                }
+            
+            return {
+                "valid": True,
+                "title": feed.feed.get("title", "Unknown"),
+                "description": feed.feed.get("description", ""),
+                "entries_count": len(feed.entries),
+                "status_code": response.status_code
+            }
+            
+        except requests.exceptions.ConnectionError as e:
+            if "Failed to resolve" in str(e) or "nodename nor servname" in str(e):
+                return {
+                    "valid": False,
+                    "error": f"DNS resolution failed: Cannot resolve domain name. Please check the URL."
+                }
+            else:
+                return {
+                    "valid": False,
+                    "error": f"Connection failed: {str(e)}"
+                }
+        except requests.exceptions.Timeout:
+            return {
+                "valid": False,
+                "error": "Request timed out. The server may be slow or unresponsive."
+            }
+        except requests.exceptions.HTTPError as e:
+            return {
+                "valid": False,
+                "error": f"HTTP error {e.response.status_code}: {e}",
+                "status_code": e.response.status_code
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": f"Validation failed: {str(e)}"
+            }
 
     async def fetch_rss_content(self, rss_url: str) -> List[dict]:
         """Fetch and parse RSS content from a URL."""
         try:
-            # Use requests to fetch RSS content
-            response = requests.get(rss_url, timeout=self.session_timeout)
+            logger.info(f"Fetching RSS content from: {rss_url}")
+            
+            # Use session to fetch RSS content with improved error handling
+            response = self.session.get(rss_url, timeout=self.session_timeout)
             response.raise_for_status()
+            
+            logger.info(f"Successfully fetched RSS content: {len(response.content)} bytes")
             
             # Parse RSS feed
             feed = feedparser.parse(response.content)
@@ -38,8 +141,8 @@ class RssService:
                 
                 if link:
                     try:
-                        # Fetch full article content
-                        article_response = requests.get(link, timeout=self.session_timeout)
+                        # Fetch full article content with session
+                        article_response = self.session.get(link, timeout=self.session_timeout)
                         article_response.raise_for_status()
                         soup = BeautifulSoup(article_response.text, "html.parser")
                         
@@ -77,9 +180,25 @@ class RssService:
             
             return articles
             
+        except requests.exceptions.ConnectionError as e:
+            if "Failed to resolve" in str(e) or "nodename nor servname" in str(e):
+                logger.error(f"DNS resolution failed for {rss_url}: {e}")
+                raise Exception(f"DNS resolution failed for {rss_url}. Please check the URL and your network connection.")
+            else:
+                logger.error(f"Connection error for {rss_url}: {e}")
+                raise Exception(f"Failed to connect to {rss_url}. The server may be down or unreachable.")
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Timeout error for {rss_url}: {e}")
+            raise Exception(f"Request timed out for {rss_url}. The server may be slow or unresponsive.")
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error for {rss_url}: {e}")
+            raise Exception(f"HTTP error {e.response.status_code} for {rss_url}: {e}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error for {rss_url}: {e}")
+            raise Exception(f"Request failed for {rss_url}: {e}")
         except Exception as e:
-            logger.error(f"Failed to fetch RSS content from {rss_url}: {e}")
-            raise
+            logger.error(f"Unexpected error fetching RSS content from {rss_url}: {e}")
+            raise Exception(f"Failed to fetch RSS content from {rss_url}: {e}")
 
     async def fetch_and_store_feed(self, feed: RssFeed) -> int:
         """Fetch RSS content and store articles in database."""
