@@ -109,6 +109,20 @@ class VisionBoardAPI {
     return response.json()
   }
 
+  async createItemWithImage(formData: FormData): Promise<VisionItem> {
+    const response = await fetch(`${this.baseUrl}/items/upload`, {
+      method: 'POST',
+      body: formData, // No Content-Type header - let browser set it for multipart/form-data
+    })
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create vision item with image: ${response.statusText} - ${errorText}`)
+    }
+    
+    return response.json()
+  }
+
   async updateItem(id: number, item: VisionItemUpdate): Promise<VisionItem> {
     const response = await fetch(`${this.baseUrl}/items/${id}`, {
       method: 'PUT',

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, X, Image as ImageIcon } from "lucide-react"
 import Image from "next/image"
-import { visionBoardAPI, type VisionItemCreate } from "@/lib/visionBoardApi"
+import { visionBoardAPI } from "@/lib/visionBoardApi"
 import { useToast } from "@/hooks/use-toast"
 
 interface VisionProjectUploadModalProps {
@@ -84,14 +84,6 @@ export default function VisionProjectUploadModal({
     }))
   }
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = error => reject(error)
-    })
-  }
 
   const removeImage = () => {
     if (formData.imagePreview) {
@@ -117,20 +109,17 @@ export default function VisionProjectUploadModal({
     setIsUploading(true)
 
     try {
-      // Convert image file to base64 for permanent storage
-      const base64Image = await convertFileToBase64(formData.imageFile)
-      
-      const visionItem: VisionItemCreate = {
-        title: formData.title,
-        description: formData.description,
-        year: formData.year,
-        category: "Project",
-        priority: "medium",
-        image_url: base64Image,
-      }
+      // Create FormData for multipart upload
+      const uploadFormData = new FormData()
+      uploadFormData.append('title', formData.title)
+      uploadFormData.append('description', formData.description)
+      uploadFormData.append('category', 'Project')
+      uploadFormData.append('year', formData.year.toString())
+      uploadFormData.append('priority', 'medium')
+      uploadFormData.append('image', formData.imageFile)
 
-      console.log('Sending vision item:', visionItem)
-      const result = await visionBoardAPI.createItem(visionItem)
+      console.log('Uploading vision item with image...')
+      const result = await visionBoardAPI.createItemWithImage(uploadFormData)
       console.log('API response:', result)
       
       toast({
