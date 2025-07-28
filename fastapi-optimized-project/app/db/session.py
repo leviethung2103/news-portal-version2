@@ -61,7 +61,7 @@ async def init_db():
     """
     async with engine.begin() as conn:
         # Import all models to register them with SQLAlchemy
-        from ..models import user, rss, vision_board, project  # noqa: F401
+        from ..models import user, rss, vision_board, project, user_read_articles  # noqa: F401
 
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created")

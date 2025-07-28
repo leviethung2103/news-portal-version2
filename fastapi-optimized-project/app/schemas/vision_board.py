@@ -14,6 +14,7 @@ class VisionItemBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     category: str = Field(..., min_length=1, max_length=100)
+    year: int = Field(..., ge=1900, le=2100)
     target_date: Optional[datetime] = None
     priority: PriorityLevel = PriorityLevel.MEDIUM
     image_url: Optional[str] = Field(None, max_length=500)
@@ -27,6 +28,7 @@ class VisionItemUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     category: Optional[str] = Field(None, min_length=1, max_length=100)
+    year: Optional[int] = Field(None, ge=1900, le=2100)
     target_date: Optional[datetime] = None
     priority: Optional[PriorityLevel] = None
     image_url: Optional[str] = Field(None, max_length=500)

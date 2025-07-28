@@ -95,6 +95,7 @@
 
 - Organize and track your goals visually.
 - Add, edit, and delete vision items with categories, priorities, and target dates.
+- **Upload projects to your Vision Board**: Use the new Project Upload modal to add projects with an image, title, description, and target year.
 - Improved feedback and instant UI updates on item deletion.
 
 ## Sidebar Navigation

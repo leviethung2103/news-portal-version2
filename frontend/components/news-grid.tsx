@@ -39,16 +39,32 @@ export default function NewsGrid() {
     const fetchReadArticles = async () => {
       try {
         const token = localStorage.getItem('token')
-        if (token) {
+        const user = localStorage.getItem('user')
+        console.log('Token for read articles:', token ? 'exists' : 'missing')
+        console.log('User for read articles:', user ? 'exists' : 'missing')
+        
+        if (token && user) {
           const response = await fetch('/api/articles/read-articles', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           })
+          console.log('Read articles response status:', response.status)
           if (response.ok) {
             const readIds = await response.json()
+            console.log('Read articles:', readIds)
             setReadArticles(new Set(readIds))
+          } else if (response.status === 401) {
+            // Token expired or invalid, clear auth data
+            console.warn('Authentication failed, clearing tokens')
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            // Don't redirect here as user might not be on a protected page
+          } else {
+            console.error('Failed to fetch read articles:', response.status, await response.text())
           }
+        } else {
+          console.log('No authentication credentials found, skipping read articles fetch')
         }
       } catch (error) {
         console.error('Failed to fetch read articles:', error)
@@ -75,7 +91,14 @@ export default function NewsGrid() {
         params.append("search", searchTerm)
       }
 
-      const response = await fetch(`/api/news?${params}`)
+      // Add authentication header if available
+      const token = localStorage.getItem('token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch(`/api/news?${params}`, { headers })
       const data: NewsResponse = await response.json()
 
       if (reset || page === 1) {
@@ -114,8 +137,8 @@ export default function NewsGrid() {
     fetchNews(1, true)
   }, [fetchNews])
 
-  // Filter out read articles from the display
-  const filteredArticles = articles.filter(article => !readArticles.has(article.id))
+  // Articles are already filtered on the server side, so we use them directly
+  const filteredArticles = articles
 
 
   if (loading) {

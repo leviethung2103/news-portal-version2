@@ -15,10 +15,28 @@ function extractImageFromDescription(description: string): string {
   return imgMatch ? imgMatch[1] : "/placeholder.svg?height=500&width=800";
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Get authentication header to fetch read articles
+    const authHeader = request.headers.get('authorization')
+    let readArticleIds: string[] = []
+    
+    // Fetch read articles if authenticated
+    if (authHeader) {
+      try {
+        const readResponse = await fetch(`${API_BASE_URL}/api/v1/articles/read-articles`, {
+          headers: { 'Authorization': authHeader }
+        })
+        if (readResponse.ok) {
+          readArticleIds = await readResponse.json()
+        }
+      } catch (error) {
+        console.log('Could not fetch read articles for featured:', error)
+      }
+    }
+
     // Fetch latest articles from backend RSS feeds
-    const response = await fetch(`${API_BASE_URL}/api/v1/rss/items?limit=5`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/rss/items?limit=10`); // Fetch more to account for read articles
     
     if (!response.ok) {
       throw new Error('Failed to fetch RSS items');
@@ -26,9 +44,19 @@ export async function GET() {
     
     const rssItems = await response.json();
     
-    // Select the most recent article as featured
+    // Filter out read articles and select the most recent unread article as featured
     if (rssItems && rssItems.length > 0) {
-      const latestItem = rssItems[0]; // Get the most recent article
+      let unreadItems = rssItems
+      if (authHeader && readArticleIds.length > 0) {
+        unreadItems = rssItems.filter((item: any) => !readArticleIds.includes(String(item.id)))
+      }
+      
+      if (unreadItems.length === 0) {
+        // No unread articles, fall back to most recent
+        unreadItems = rssItems
+      }
+      
+      const latestItem = unreadItems[0]; // Get the most recent unread article
       
       const featuredArticle = {
         id: latestItem.id || "featured-1",

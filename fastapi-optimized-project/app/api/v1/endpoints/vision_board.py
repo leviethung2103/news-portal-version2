@@ -37,6 +37,7 @@ async def read_vision_items(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     category: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
     priority: Optional[PriorityLevel] = Query(None),
     is_completed: Optional[bool] = Query(None),
     db: AsyncSession = Depends(get_db),
@@ -49,6 +50,7 @@ async def read_vision_items(
         skip=skip,
         limit=limit,
         category=category,
+        year=year,
         priority=priority,
         is_completed=is_completed
     )

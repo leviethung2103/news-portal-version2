@@ -18,6 +18,7 @@ class VisionItem(Base):
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
     category = Column(String(100), nullable=False, index=True)
+    year = Column(Integer, nullable=False, index=True)
     target_date = Column(DateTime, nullable=True)
     priority = Column(Enum(PriorityLevel), default=PriorityLevel.MEDIUM, nullable=False)
     image_url = Column(String(500), nullable=True)

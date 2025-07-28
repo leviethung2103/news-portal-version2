@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Clock, ExternalLink } from "lucide-react"
@@ -28,7 +28,8 @@ export default function HeroSection() {
     const fetchReadArticles = async () => {
       try {
         const token = localStorage.getItem('token')
-        if (token) {
+        const user = localStorage.getItem('user')
+        if (token && user) {
           const response = await fetch('/api/articles/read-articles', {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -37,6 +38,10 @@ export default function HeroSection() {
           if (response.ok) {
             const readIds = await response.json()
             setReadArticles(new Set(readIds))
+          } else if (response.status === 401) {
+            // Token expired, clear auth data
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
           }
         }
       } catch (error) {
@@ -48,7 +53,14 @@ export default function HeroSection() {
 
   const fetchFeaturedArticle = useCallback(async () => {
     try {
-      const response = await fetch("/api/news/featured")
+      // Add authentication header if available
+      const token = localStorage.getItem('token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch("/api/news/featured", { headers })
       const article = await response.json()
       
       // If the current featured article is read, fetch a new one

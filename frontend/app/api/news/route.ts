@@ -35,10 +35,29 @@ export async function GET(request: Request) {
   const limit = Number.parseInt(searchParams.get("limit") || "10")
 
   try {
-    // Build query parameters for backend
+    // Get authentication header to fetch read articles
+    const authHeader = request.headers.get('authorization')
+    let readArticleIds: string[] = []
+    
+    // Fetch read articles if authenticated
+    if (authHeader) {
+      try {
+        const readResponse = await fetch(`${API_BASE_URL}/api/v1/articles/read-articles`, {
+          headers: { 'Authorization': authHeader }
+        })
+        if (readResponse.ok) {
+          readArticleIds = await readResponse.json()
+        }
+      } catch (error) {
+        console.log('Could not fetch read articles:', error)
+      }
+    }
+
+    // Build query parameters for backend - fetch more to account for filtering
+    const fetchLimit = limit + readArticleIds.length + 20 // Fetch extra to account for read articles
     const backendParams = new URLSearchParams({
       skip: ((page - 1) * limit).toString(),
-      limit: limit.toString(),
+      limit: fetchLimit.toString(),
     });
 
     if (category && category !== "all") {
@@ -73,8 +92,14 @@ export async function GET(request: Request) {
       link: item.link
     }));
 
-    // No trending filter needed anymore
-    let finalNews = [...transformedNews];
+    // Filter out read articles if user is authenticated
+    let finalNews = transformedNews
+    if (authHeader && readArticleIds.length > 0) {
+      finalNews = transformedNews.filter(article => !readArticleIds.includes(String(article.id)))
+    }
+    
+    // Take only the requested limit after filtering
+    finalNews = finalNews.slice(0, limit);
 
     return NextResponse.json({
       articles: finalNews,

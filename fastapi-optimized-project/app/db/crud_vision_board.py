@@ -12,6 +12,7 @@ async def get_vision_items(
     skip: int = 0, 
     limit: int = 100,
     category: Optional[str] = None,
+    year: Optional[int] = None,
     priority: Optional[PriorityLevel] = None,
     is_completed: Optional[bool] = None
 ) -> List[VisionItem]:
@@ -20,6 +21,9 @@ async def get_vision_items(
     
     if category:
         query = query.where(VisionItem.category == category)
+    
+    if year:
+        query = query.where(VisionItem.year == year)
     
     if priority:
         query = query.where(VisionItem.priority == priority)

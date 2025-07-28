@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Header from "@/components/header"
 import { NewsProvider } from "@/components/news-provider"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 // Function to get article content from API
 async function getArticle(id: string) {
@@ -132,12 +134,79 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
 
           <div className="prose prose-lg max-w-none dark:prose-invert">
             {article.is_crawled ? (
-              // Render crawled markdown content
-              <div style={{ whiteSpace: 'pre-wrap' }}>
+              // Render crawled markdown content with proper markdown rendering
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Custom styling for markdown elements
+                  h1: ({ children }) => <h1 className="text-3xl font-bold mt-8 mb-4">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-2xl font-semibold mt-6 mb-3">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-xl font-medium mt-4 mb-2">{children}</h3>,
+                  p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>,
+                  li: ({ children }) => <li className="ml-4">{children}</li>,
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground">
+                      {children}
+                    </blockquote>
+                  ),
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">{children}</code>
+                    ) : (
+                      <code className={`block bg-muted p-4 rounded text-sm font-mono overflow-x-auto ${className || ''}`}>
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre: ({ children }) => (
+                    <pre className="bg-muted p-4 rounded overflow-x-auto mb-4">{children}</pre>
+                  ),
+                  a: ({ href, children }) => (
+                    <a 
+                      href={href} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      {children}
+                    </a>
+                  ),
+                  img: ({ src, alt }) => (
+                    <div className="my-6">
+                      <Image
+                        src={src || '/placeholder.svg'}
+                        alt={alt || ''}
+                        width={800}
+                        height={400}
+                        className="rounded-lg max-w-full h-auto"
+                        unoptimized // For external images
+                      />
+                    </div>
+                  ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-4">
+                      <table className="min-w-full border-collapse border border-border">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  th: ({ children }) => (
+                    <th className="border border-border px-4 py-2 bg-muted font-semibold text-left">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="border border-border px-4 py-2">{children}</td>
+                  ),
+                }}
+              >
                 {article.content}
-              </div>
+              </ReactMarkdown>
             ) : (
-              // Render basic content as HTML
+              // Render basic content as HTML for non-crawled articles
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             )}
           </div>
