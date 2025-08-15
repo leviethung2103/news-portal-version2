@@ -80,7 +80,7 @@ This project includes a convenient `run.py` script that handles uvicorn startup 
 
 ```bash
 # Navigate to the project directory
-cd fastapi-optimized-project
+cd backend
 
 # For development (with auto-reload)
 python run.py dev
