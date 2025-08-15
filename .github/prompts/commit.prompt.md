@@ -23,7 +23,7 @@ cd frontend && npm run build
 ## Backend Setup
 At the root of project, run command
 ```bash
-cd fastapi-optimized-project
+cd backend
 # conda create -n news-portal python=3.12
 conda activate news-portal
 pip install -r requirements.txt

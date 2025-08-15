@@ -23,7 +23,7 @@ graph TD
 
 - **User Browser**: Interacts with the application via a web interface.
 - **Frontend (Next.js)**: Provides the user interface, handles routing, and communicates with the backend API. Located in the `frontend/` directory.
-- **Backend API (FastAPI)**: Serves as the main API layer, handling business logic, authentication, and data processing. Located in the `fastapi-optimized-project/` directory.
+- **Backend API (FastAPI)**: Serves as the main API layer, handling business logic, authentication, and data processing. Located in the `backend/` directory.
 - **Database (SQLite)**: Stores news articles, user data, and other persistent information. Managed by the backend.
 - **Playwright Test Suite**: Automated end-to-end and integration tests for both frontend and backend, located in `frontend/tests/`.
 
@@ -37,7 +37,7 @@ graph TD
 ## Directory Structure (Key Parts)
 
 - `frontend/` - Next.js app, UI components, hooks, contexts, tests
-- `fastapi-optimized-project/` - FastAPI backend, database, migrations, backend tests
+- `backend/` - FastAPI backend, database, migrations, backend tests
 - `docs/` - Documentation
 - `awesome-copilot/`, `awesome-cursorrules/` - Project meta, rules, and prompts
 

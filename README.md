@@ -55,7 +55,7 @@
 
 1. **Navigate to the backend directory:**
    ```sh
-   cd fastapi-optimized-project
+   cd backend
    ```
 
 2. **Create and activate a conda environment:**

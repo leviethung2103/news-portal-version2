@@ -20,7 +20,7 @@ npx playwright test   # Run E2E tests
 
 ### Backend (FastAPI)
 ```bash
-cd fastapi-optimized-project
+cd backend
 conda create -n news-portal python=3.12 && conda activate news-portal
 pip install -r requirements.txt
 python run.py         # Start development server (localhost:8000)
@@ -34,7 +34,7 @@ flake8 .             # Linting
 
 ### Database Migrations
 ```bash
-cd fastapi-optimized-project
+cd backend
 alembic upgrade head     # Apply migrations
 alembic revision --autogenerate -m "description"  # Create new migration
 ```

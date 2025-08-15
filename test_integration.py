@@ -264,7 +264,7 @@ def main():
     # Test backend health
     if not test_backend_health():
         print("\n💡 To start the backend, run:")
-        print("cd fastapi-optimized-project")
+        print("cd backend")
         print("conda create -n news-portal python=3.12")
         print("conda activate news-portal")
         print("pip install -r requirements.txt")

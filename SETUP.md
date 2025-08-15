@@ -6,7 +6,7 @@ This project integrates a FastAPI backend with a Next.js frontend to create an a
 
 ```
 news-portal-dashboard/
-├── fastapi-optimized-project/    # Backend (FastAPI)
+├── backend/    # Backend (FastAPI)
 ├── frontend/                     # Frontend (Next.js)
 ├── test_integration.py          # Integration test script
 └── SETUP.md                     # This file
@@ -23,7 +23,7 @@ news-portal-dashboard/
 
 1. Navigate to the backend directory:
 ```bash
-cd fastapi-optimized-project
+cd backend
 ```
 
 2. Create and activate a conda environment:
